@@ -154,22 +154,29 @@ double GammaPi0SeparationTool::isPhoton(const LHCb::CaloHypo* hypo){
 
 bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy){
   if( NULL == hypo)return false;
+  LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
   if( NULL == cluster)return false;
 
-  std::cout<<"Raw energy matrix";
-  DeCalorimeter* non_const_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
-  const CaloVector<CellParam>& m_params = non_const_ecal->cellParams();
-  std::cout<<"cellParams size "<< non_const_ecal->cellParams().size();
+  //std::cout<<"Raw energy matrix";
+  //DeCalorimeter* non_const_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
+  //const CaloVector<CellParam>& m_params = non_const_ecal->cellParams();
+  //std::cout<<"cellParams size "<< non_const_ecal->cellParams().size();
+  //std::cout<<std::endl;
+  //std::cout<<"digits_full size "<< digits_full->size();
+  //std::cout<<std::endl;
+  std::cout<<"CaloDigits size 0"<<digits_full->size()<<std::endl;
   std::cout<<std::endl;
-  std::cout<<"digits_full size "<< digits_full->size();
+  std::cout<<LHCb::CaloDigitLocation::Ecal;
+  std::cout<<std::endl;
+  std::cout<<digits_full;
+  std::cout<<std::endl;
   std::cout<<std::endl;
 
   while (rowEnergy.size() < 25){
       rowEnergy.push_back(double(0.0));
   }
-  return true;
-  LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
+
   const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
   std::cout<<"Raw energy clusters";
   std::cout<<std::endl;
@@ -178,7 +185,7 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
     if ( 0 == digit ) { continue ; }
     const double fraction = entry->fraction();
     double energy   = digit->e() * fraction ;
-
+    LHCb::CaloDigits * digits_full_1 = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
     if( abs( (int)digit->cellID().col() - (int)cluster->seed().col() ) <= 2 &&
         abs( (int)digit->cellID().row() - (int)cluster->seed().row() ) <= 2 &&
         digit->cellID().area() == cluster->seed().area() ){
@@ -186,25 +193,22 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
         std::cout<<"col, row, area, en: "<<digit->cellID().col()<<" "<<digit->cellID().row()<<" "<<digit->cellID().area()<<" "<<digit->e();
         std::cout<<std::endl;
     }
-  const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
-  std::cout<<"Raw energy clusters";
-  std::cout<<std::endl;
-  for ( auto entry = entries.begin() ; entries.end() != entry ; ++entry ){
-    const LHCb::CaloDigit* digit = entry->digit()  ;
-    if ( 0 == digit ) { continue ; }
-    const double fraction = entry->fraction();
-    double energy   = digit->e() * fraction ;
-
-    if( abs( (int)digit->cellID().col() - (int)cluster->seed().col() ) <= 2 &&
-        abs( (int)digit->cellID().row() - (int)cluster->seed().row() ) <= 2 &&
-        digit->cellID().area() == cluster->seed().area() ){
-        rowEnergy.push_back(energy);
-        std::cout<<"col, row, area, en: " << digit->cellID().col() << " " << digit->cellID().row() << " " << digit->cellID().area() << " " << digit->e();
-        std::cout<<std::endl;
-    }
+    std::cout<<"CaloDigits-2 size "<<digits_full_1->size()<<std::endl;
+    std::cout<<std::endl;
+    std::cout<<LHCb::CaloDigitLocation::Ecal;
+    std::cout<<std::endl;
+    std::cout<<digits_full_1;
+    std::cout<<std::endl;
+  
   }
-  std::cout<<"CaloDigits sise"<<digits_full->size()<<std::endl;
   std::cout<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<"CaloDigits size "<<digits_full->size()<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<LHCb::CaloDigitLocation::Ecal;
+  std::cout<<std::endl;
+  std::cout<<digits_full;
+
 
   return true;
 }

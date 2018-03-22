@@ -89,7 +89,7 @@ private:
   std::unique_ptr<XGBClassifierPhPi0> m_xgb2;
 
   const DeCalorimeter* m_ecal = nullptr;
-  const LHCb::CaloDigits* digits_full = nullptr;
+  //const LHCb::CaloDigits* digits_full = nullptr;
 
   double photonDiscriminant(int area,
                             double r2, double r2r4, double asym,

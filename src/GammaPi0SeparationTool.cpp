@@ -48,7 +48,7 @@ StatusCode GammaPi0SeparationTool::initialize() {
 
   /// Retrieve geometry of detector
   m_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
-  digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
+  //digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
 
   // TMVA discriminant
   static const std::vector<std::string> inputVars = {
@@ -102,10 +102,7 @@ double GammaPi0SeparationTool::isPhoton(const LHCb::CaloHypo* hypo){
   std::cout<<"IS photon"<<std::endl;
 
   if ( !m_ecal ) return m_def;
-  if ( !digits_full) {
-    std::cout<<"no digits_full"<<std::endl;
-    return m_def;
-  }
+
   if ( LHCb::CaloMomentum(hypo).pt() < m_minPt) return m_def;
 
   double fr2 = 0;
@@ -172,7 +169,23 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
       rowEnergy.push_back(double(0.0));
   }
   return true;
+  LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
+  const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
+  std::cout<<"Raw energy clusters";
+  std::cout<<std::endl;
+  for ( auto entry = entries.begin() ; entries.end() != entry ; ++entry ){
+    const LHCb::CaloDigit* digit = entry->digit()  ;
+    if ( 0 == digit ) { continue ; }
+    const double fraction = entry->fraction();
+    double energy   = digit->e() * fraction ;
 
+    if( abs( (int)digit->cellID().col() - (int)cluster->seed().col() ) <= 2 &&
+        abs( (int)digit->cellID().row() - (int)cluster->seed().row() ) <= 2 &&
+        digit->cellID().area() == cluster->seed().area() ){
+        rowEnergy.push_back(energy);
+        std::cout<<"col, row, area, en: "<<digit->cellID().col()<<" "<<digit->cellID().row()<<" "<<digit->cellID().area()<<" "<<digit->e();
+        std::cout<<std::endl;
+    }
   const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
   std::cout<<"Raw energy clusters";
   std::cout<<std::endl;
@@ -190,6 +203,9 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
         std::cout<<std::endl;
     }
   }
+  std::cout<<"CaloDigits sise"<<digits_full->size()<<std::endl;
+  std::cout<<std::endl;
+
   return true;
 }
 

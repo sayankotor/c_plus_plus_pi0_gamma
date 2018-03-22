@@ -48,6 +48,7 @@ StatusCode GammaPi0SeparationTool::initialize() {
 
   /// Retrieve geometry of detector
   m_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
+  digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
 
   // TMVA discriminant
   static const std::vector<std::string> inputVars = {
@@ -98,8 +99,13 @@ double GammaPi0SeparationTool::isPhoton(const LHCb::CaloHypo* hypo){
   // clear all data
   m_data.clear();
   m_prsdata.clear();
+  std::cout<<"IS photon"<<std::endl;
 
   if ( !m_ecal ) return m_def;
+  if ( !digits_full) {
+    std::cout<<"no digits_full"<<std::endl;
+    return m_def;
+  }
   if ( LHCb::CaloMomentum(hypo).pt() < m_minPt) return m_def;
 
   double fr2 = 0;
@@ -137,7 +143,6 @@ double GammaPi0SeparationTool::isPhoton(const LHCb::CaloHypo* hypo){
   // return NN output
   double prediction = photonDiscriminant(area, fr2, fr2r4, fasym, fkappa, Eseed, E2,
                             r2PS, asymPS, eMaxPS, e2ndPS, multiPS, multiPS15, multiPS30, multiPS45);
-  std::cout<<"IS photon"<<std::endl;
   if (rawEnergyVector.size() != 25)
   {
     std::cout<<"else: raw energy size: "<<rawEnergyVector.size()<<std::endl;
@@ -155,6 +160,18 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
   if( NULL == cluster)return false;
 
+  std::cout<<"Raw energy matrix";
+  DeCalorimeter* non_const_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
+  const CaloVector<CellParam>& m_params = non_const_ecal->cellParams();
+  std::cout<<"cellParams size "<< non_const_ecal->cellParams().size();
+  std::cout<<std::endl;
+  std::cout<<"digits_full size "<< digits_full->size();
+  std::cout<<std::endl;
+
+  while (rowEnergy.size() < 25){
+      rowEnergy.push_back(double(0.0));
+  }
+  return true;
 
   const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
   std::cout<<"Raw energy clusters";
@@ -173,27 +190,6 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
         std::cout<<std::endl;
     }
   }
-  while (rowEnergy.size() < 25){
-      rowEnergy.push_back(double(0.0));
-  }
-  std::cout<<"Raw energy ecal";
-  std::cout<<std::endl;
-  LHCb::CaloDigits* digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
-  //for( auto digit = digits_full->begin() ; digits_full->end() != digit ; ++digit) {       
-    //const LHCb::CaloDigit cellID = digit->cellID();       
-    //m_index.push_back( cellID.index() );       
-    //m_calo.push_back( cellID.calo() );       
-    //m_area.push_back( cellID.area() );       
-    //m_row.push_back( cellID.row() );       
-    //m_column.push_back( cellID.col() );       
-    //auto p = calo->cellCenter(cellID);       
-    //m_xs.push_back(p.X());       
-    //m_ys.push_back(p.Y());       
-    //m_zs.push_back(p.Z());       
-    //m_es.push_back( digit->e() );  
-    //std::cout << "col, row, area, en: "<<cellID->col() << " "<<cellID->row() << " " << cellID->area() << " " << energy;  
-    //std::cout << std::endl;         
-  //}
   return true;
 }
 

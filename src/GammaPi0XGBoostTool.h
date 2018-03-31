@@ -19,9 +19,9 @@
 
 //using namespace LHCb;
 
-#include "TMV_MLP_inner.C"
-#include "TMV_MLP_middle.C"
-#include "TMV_MLP_outer.C"
+//#include "TMV_MLP_inner.C"
+//#include "TMV_MLP_middle.C"
+//#include "TMV_MLP_outer.C"
 
 
 /** @class GammaPi0XGBoostTool GammaPi0XGBoostTool.h
@@ -31,9 +31,18 @@
  *  @date   2010-03-29
  */
 
+struct functor_cell { 
+   bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
+      if ((int)cell_a.cellID().col() == (int)cell_b.cellID().col()) {
+        return (int)cell_a.cellID().row() < (int)cell_b.cellID().row();
+      }
+      return ((int)cell_a.cellID().col() < (int)cell_b.cellID().col());
+   }
+};
+
 class GammaPi0XGBoostTool : public extends<GaudiTool, IGammaPi0SeparationTool>{
 public:
-
+  functor_cell comparer;
   /// Standard constructor
   GammaPi0XGBoostTool( const std::string& type,
                           const std::string& name,

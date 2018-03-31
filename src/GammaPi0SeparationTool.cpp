@@ -99,7 +99,7 @@ double GammaPi0SeparationTool::isPhoton(const LHCb::CaloHypo* hypo){
   // clear all data
   m_data.clear();
   m_prsdata.clear();
-  std::cout<<"IS photon"<<std::endl;
+  //std::cout<<"IS photon"<<std::endl;
 
   if ( !m_ecal ) return m_def;
 
@@ -158,58 +158,41 @@ bool GammaPi0SeparationTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vecto
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
   if( NULL == cluster)return false;
 
-  //std::cout<<"Raw energy matrix";
-  //DeCalorimeter* non_const_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
-  //const CaloVector<CellParam>& m_params = non_const_ecal->cellParams();
-  //std::cout<<"cellParams size "<< non_const_ecal->cellParams().size();
-  //std::cout<<std::endl;
-  //std::cout<<"digits_full size "<< digits_full->size();
-  //std::cout<<std::endl;
-  std::cout<<"CaloDigits size 0"<<digits_full->size()<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<LHCb::CaloDigitLocation::Ecal;
-  std::cout<<std::endl;
-  std::cout<<digits_full;
-  std::cout<<std::endl;
-  std::cout<<std::endl;
-
-  while (rowEnergy.size() < 25){
-      rowEnergy.push_back(double(0.0));
+  LHCb::CaloCellID centerID = cluster->seed();
+  
+  CaloNeighbors n_vector = m_ecal->zsupNeighborCells(centerID);
+  LHCb::CaloCellID::Set n_set = LHCb::CaloCellID::Set(n_vector.begin(), n_vector.end());
+  for ( CaloNeighbors::const_iterator neighbor =  n_vector.begin(); n_vector.end() != neighbor ; ++neighbor ){
+      //std::cout<<"col0, row0, area0, en0: "<<neighbor->col()<<" "<<neighbor->row()<<" "<<neighbor->area();
+      std::cout<<std::endl;
+      CaloNeighbors local_vector = m_ecal->zsupNeighborCells(*neighbor);
+      LHCb::CaloCellID::Set new_set = LHCb::CaloCellID::Set(local_vector.begin(), local_vector.end());
+      n_set.insert(new_set.begin(), new_set.end());
   }
 
-  const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
-  std::cout<<"Raw energy clusters";
+  std::cout<<n_set.size()<<std::endl;
   std::cout<<std::endl;
-  for ( auto entry = entries.begin() ; entries.end() != entry ; ++entry ){
-    const LHCb::CaloDigit* digit = entry->digit()  ;
-    if ( 0 == digit ) { continue ; }
-    const double fraction = entry->fraction();
-    double energy   = digit->e() * fraction ;
-    LHCb::CaloDigits * digits_full_1 = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
-    if( abs( (int)digit->cellID().col() - (int)cluster->seed().col() ) <= 2 &&
-        abs( (int)digit->cellID().row() - (int)cluster->seed().row() ) <= 2 &&
-        digit->cellID().area() == cluster->seed().area() ){
-        rowEnergy.push_back(energy);
-        std::cout<<"col, row, area, en: "<<digit->cellID().col()<<" "<<digit->cellID().row()<<" "<<digit->cellID().area()<<" "<<digit->e();
+  if (n_set.size() < 25){
+    std::cout<<"less than 25"<<std::endl;
+    for( std::set<LHCb::CaloCellID>::const_iterator n_set_member = n_set.begin(); n_set.end()!= n_set_member; ++n_set_member){
+        //std::cout<<"col, row, area, en: "<<n_set_member->col()<<" "<<n_set_member->row()<<" "<<n_set_member->area();
         std::cout<<std::endl;
     }
-    std::cout<<"CaloDigits-2 size "<<digits_full_1->size()<<std::endl;
-    std::cout<<std::endl;
-    std::cout<<LHCb::CaloDigitLocation::Ecal;
-    std::cout<<std::endl;
-    std::cout<<digits_full_1;
-    std::cout<<std::endl;
-  
+    return false;
   }
-  std::cout<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<"CaloDigits size "<<digits_full->size()<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<LHCb::CaloDigitLocation::Ecal;
-  std::cout<<std::endl;
-  std::cout<<digits_full;
+  std::vector<LHCb::CaloDigit> digit_v_sort;
+  for( const auto& one_digit : *digits_full ){
+        if( abs( (int)one_digit->cellID().col() - (int)centerID.col() ) <= 2 &&
+        abs( (int)one_digit->cellID().row() - (int)centerID.row() ) <= 2 &&
+        one_digit->cellID().area() == cluster->seed().area() ){
+            digit_v_sort.push_back(*one_digit);
+        }
+  }
+  std::sort(digit_v_sort.begin(), digit_v_sort.end(), comparer);
 
-
+  for( const auto& one_digit : digit_v_sort ){
+    rowEnergy.push_back(one_digit.e());
+  }
   return true;
 }
 

@@ -116,53 +116,6 @@ double GammaPi0XGBoostTool::isPhoton(const LHCb::CaloHypo* hypo){
   return prediction_xgb;
 }
 
-bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy){
-  if( NULL == hypo)return false;
-  const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
-  if( NULL == cluster)return false;
-
-  LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
-  const LHCb::CaloCluster::Entries& entries = cluster->entries() ;
-  std::cout<<"Raw energy clusters";
-  std::cout<<std::endl;
-  for ( auto entry = entries.begin() ; entries.end() != entry ; ++entry ){
-    const LHCb::CaloDigit* digit = entry->digit()  ;
-    if ( 0 == digit ) { continue ; }
-    const double fraction = entry->fraction();
-    double energy   = digit->e() * fraction ;
-
-    if( abs( (int)digit->cellID().col() - (int)cluster->seed().col() ) <= 2 &&
-        abs( (int)digit->cellID().row() - (int)cluster->seed().row() ) <= 2 &&
-        digit->cellID().area() == cluster->seed().area() ){
-        rowEnergy.push_back(energy);
-        std::cout<<"col, row, area, en: "<<digit->cellID().col()<<" "<<digit->cellID().row()<<" "<<digit->cellID().area()<<" "<<energy;
-        std::cout<<std::endl;
-    }
-  }
-  while (rowEnergy.size() < 25){
-      rowEnergy.push_back(double(0.0));
-  }
-  std::cout<<"Raw energy ecal";
-  std::cout<<std::endl;
-  for( auto digit = digits_full->begin() ; digits_full->end() != digit ; ++digit) {       
-    //const LHCb::CaloCellID cellID = digit->cellID();       
-    //m_index.push_back( cellID.index() );       
-    //m_calo.push_back( cellID.calo() );       
-    //m_area.push_back( cellID.area() );       
-    //m_row.push_back( cellID.row() );       
-    //m_column.push_back( cellID.col() );       
-    //auto p = calo->cellCenter(cellID);       
-    //m_xs.push_back(p.X());       
-    //m_ys.push_back(p.Y());       
-    //m_zs.push_back(p.Z());       
-    //m_es.push_back( digit->e() );  
-    //std::cout << "col, row, area, en: "<<cellID.col() << " "<<cellID.row() << " " << cellID.area() << " " << energy;  
-    std::cout << std::endl;          
-  }
-
-  return true;
-}
-
 double GammaPi0XGBoostTool::XGBDiscriminant(int area, std::vector<double>& row_energies)
 {
 
@@ -172,6 +125,67 @@ double GammaPi0XGBoostTool::XGBDiscriminant(int area, std::vector<double>& row_e
                        : -1e10 );
         //info() << " INPUT TO GAMMA/PI0 : NN[" << input << "]= " << value << " (area="<<area<<")"<< endmsg;
         return value;
+}
+
+bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy){
+  if( NULL == hypo)return false;
+  LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
+  const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
+  if( NULL == cluster)return false;
+
+  std::cout<<"CaloDigits size 0"<<digits_full->size()<<std::endl;
+
+  LHCb::CaloCellID centerID = cluster->seed();
+  
+  std::cout<<"count neibours: "<<std::endl;
+  CaloNeighbors n_vector = m_ecal->zsupNeighborCells(centerID);
+  LHCb::CaloCellID::Set n_set = LHCb::CaloCellID::Set(n_vector.begin(), n_vector.end());
+  for ( CaloNeighbors::const_iterator neighbor =  n_vector.begin(); n_vector.end() != neighbor ; ++neighbor ){
+      std::cout<<"col0, row0, area0, en0: "<<neighbor->col()<<" "<<neighbor->row()<<" "<<neighbor->area();
+      std::cout<<std::endl;
+      CaloNeighbors local_vector = m_ecal->zsupNeighborCells(*neighbor);
+      LHCb::CaloCellID::Set new_set = LHCb::CaloCellID::Set(local_vector.begin(), local_vector.end());
+      n_set.insert(new_set.begin(), new_set.end());
+  }
+
+  std::cout<<n_set.size()<<std::endl;
+  std::cout<<std::endl;
+  if (n_set.size() < 25){
+    std::cout<<"less than 25"<<std::endl;
+    for( std::set<LHCb::CaloCellID>::const_iterator n_set_member = n_set.begin(); n_set.end()!= n_set_member; ++n_set_member){
+        std::cout<<"col, row, area, en: "<<n_set_member->col()<<" "<<n_set_member->row()<<" "<<n_set_member->area();
+        std::cout<<std::endl;
+    }
+    return false;
+  }
+  std::vector<LHCb::CaloDigit> digit_v_sort;
+  for( const auto& one_digit : *digits_full ){
+        if( abs( (int)one_digit->cellID().col() - (int)centerID.col() ) <= 2 &&
+        abs( (int)one_digit->cellID().row() - (int)centerID.row() ) <= 2 &&
+        one_digit->cellID().area() == cluster->seed().area() ){
+            digit_v_sort.push_back(*one_digit);
+            //rowEnergy.push_back(one_digit->e());
+            //std::cout<<"col, row, area, en: "<<one_digit->cellID().col()<<" "<<one_digit->cellID().row()<<" "<<one_digit->cellID().area();
+            //std::cout<<std::endl;
+        }
+  }
+  std::cout<<"before sort"<<std::endl;
+  for( const auto& one_digit : digit_v_sort ){
+    std::cout<<"col, row, area, en: "<<one_digit.cellID().col()<<" "<<one_digit.cellID().row()<<" "<<one_digit.cellID().area();
+    std::cout<<std::endl;
+  }
+  std::sort(digit_v_sort.begin(), digit_v_sort.end(), comparer);
+  std::cout<<"after_sort"<<std::endl;
+
+  for( const auto& one_digit : digit_v_sort ){
+    std::cout<<"col, row, area, en: "<<one_digit.cellID().col()<<" "<<one_digit.cellID().row()<<" "<<one_digit.cellID().area();
+    std::cout<<std::endl;
+  }
+
+  for( const auto& one_digit : digit_v_sort ){
+    rowEnergy.push_back(one_digit.e());
+  }
+  return true;
 }
 
 bool GammaPi0XGBoostTool::ClusterVariables(const LHCb::CaloHypo* hypo,

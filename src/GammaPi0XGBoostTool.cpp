@@ -133,16 +133,12 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
   if( NULL == cluster)return false;
 
-  std::cout<<"CaloDigits size 0"<<digits_full->size()<<std::endl;
-
   LHCb::CaloCellID centerID = cluster->seed();
   
   std::cout<<"count neibours: "<<std::endl;
   CaloNeighbors n_vector = m_ecal->zsupNeighborCells(centerID);
   LHCb::CaloCellID::Set n_set = LHCb::CaloCellID::Set(n_vector.begin(), n_vector.end());
   for ( CaloNeighbors::const_iterator neighbor =  n_vector.begin(); n_vector.end() != neighbor ; ++neighbor ){
-      std::cout<<"col0, row0, area0, en0: "<<neighbor->col()<<" "<<neighbor->row()<<" "<<neighbor->area();
-      std::cout<<std::endl;
       CaloNeighbors local_vector = m_ecal->zsupNeighborCells(*neighbor);
       LHCb::CaloCellID::Set new_set = LHCb::CaloCellID::Set(local_vector.begin(), local_vector.end());
       n_set.insert(new_set.begin(), new_set.end());
@@ -152,10 +148,6 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
   std::cout<<std::endl;
   if (n_set.size() < 25){
     std::cout<<"less than 25"<<std::endl;
-    for( std::set<LHCb::CaloCellID>::const_iterator n_set_member = n_set.begin(); n_set.end()!= n_set_member; ++n_set_member){
-        std::cout<<"col, row, area, en: "<<n_set_member->col()<<" "<<n_set_member->row()<<" "<<n_set_member->area();
-        std::cout<<std::endl;
-    }
     return false;
   }
   std::vector<LHCb::CaloDigit> digit_v_sort;
@@ -169,18 +161,7 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
             //std::cout<<std::endl;
         }
   }
-  std::cout<<"before sort"<<std::endl;
-  for( const auto& one_digit : digit_v_sort ){
-    std::cout<<"col, row, area, en: "<<one_digit.cellID().col()<<" "<<one_digit.cellID().row()<<" "<<one_digit.cellID().area();
-    std::cout<<std::endl;
-  }
   std::sort(digit_v_sort.begin(), digit_v_sort.end(), comparer);
-  std::cout<<"after_sort"<<std::endl;
-
-  for( const auto& one_digit : digit_v_sort ){
-    std::cout<<"col, row, area, en: "<<one_digit.cellID().col()<<" "<<one_digit.cellID().row()<<" "<<one_digit.cellID().area();
-    std::cout<<std::endl;
-  }
 
   for( const auto& one_digit : digit_v_sort ){
     rowEnergy.push_back(one_digit.e());

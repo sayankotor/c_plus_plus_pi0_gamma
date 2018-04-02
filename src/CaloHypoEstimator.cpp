@@ -75,7 +75,7 @@ StatusCode CaloHypoEstimator::initialize() {
   hypo2Calo()->_setProperty("AddNeighbors", neig).ignore();
 
   m_electron = tool<ICaloElectron>("CaloElectron","CaloElectron",this);
-  m_GammaPi0  = tool<IGammaPi0SeparationTool>("GammaPi0SeparationTool" , "GammaPi0SeparationTool", this);
+  m_GammaPi0  = tool<IGammaPi0SeparationTool>("GammaPi0XGBoostTool" , "GammaPi0XGBoostTool", this);
   m_neutralID = tool<INeutralIDTool>("NeutralIDTool" , "NeutralIDTool", this);
 
   m_ecal = getDet<DeCalorimeter>( DeCalorimeterLocation::Ecal );

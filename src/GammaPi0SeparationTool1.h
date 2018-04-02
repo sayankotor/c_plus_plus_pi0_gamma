@@ -1,5 +1,5 @@
 #ifndef GAMMAPI0SEPARATIONTOOL_H
-#define GAMMAPI0SEPARATIONTOOL_H 
+#define GAMMAPI0SEPARATIONTOOL_H 1
 
 // Include files
 // from Gaudi
@@ -24,7 +24,7 @@
 #include "TMV_MLP_outer.C"
 
 
-/** @class GammaPi0SeparationTool1 GammaPi0SeparationTool1.h
+/** @class GammaPi0SeparationTool GammaPi0SeparationTool.h
  *
  *
  *  @author Miriam Calvo Gomez
@@ -40,11 +40,11 @@ struct functor_cell {
    }
 };
 
-class GammaPi0SeparationTool : public extends<GaudiTool, IGammaPi0SeparationTool>{
+class GammaPi0SeparationTool1 : public extends<GaudiTool, IGammaPi0SeparationTool>{
 public:
   functor_cell comparer;
   /// Standard constructor
-  GammaPi0SeparationTool( const std::string& type,
+  GammaPi0SeparationTool1( const std::string& type,
                           const std::string& name,
                           const IInterface* parent);
 
@@ -112,4 +112,4 @@ private:
   std::map<std::string,double> m_prsdata;
   double m_def = -1.e+06;
 };
-#endif // GAMMAPI0SEPARATIONTOOL_H
+#endif // GAMMAPI0SEPARATIONTOOL1_H

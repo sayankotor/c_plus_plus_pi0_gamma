@@ -99,7 +99,7 @@ double GammaPi0SeparationTool::isPhoton(const LHCb::CaloHypo* hypo){
   // clear all data
   m_data.clear();
   m_prsdata.clear();
-  //std::cout<<"IS photon"<<std::endl;
+  std::cout<<"IS photon"<<std::endl;
 
   if ( !m_ecal ) return m_def;
 

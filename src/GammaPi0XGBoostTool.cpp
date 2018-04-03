@@ -150,22 +150,31 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
     std::cout<<"less than 25"<<std::endl;
     return false;
   }
-  std::vector<LHCb::CaloDigit> digit_v_sort;
+  //std::vector<LHCb::CaloDigit> digit_v_sort;
+  std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
   for( const auto& one_digit : *digits_full ){
         if( abs( (int)one_digit->cellID().col() - (int)centerID.col() ) <= 2 &&
         abs( (int)one_digit->cellID().row() - (int)centerID.row() ) <= 2 &&
         one_digit->cellID().area() == cluster->seed().area() ){
-            digit_v_sort.push_back(*one_digit);
+            //digit_v_sort.push_back(*one_digit);
+            vector_cells[(int)one_digit->cellID().col() - (int)centerID.col() + 2][(int)one_digit->cellID().row() - (int)centerID.row() + 2] = one_digit->e();
             //rowEnergy.push_back(one_digit->e());
             //std::cout<<"col, row, area, en: "<<one_digit->cellID().col()<<" "<<one_digit->cellID().row()<<" "<<one_digit->cellID().area();
             //std::cout<<std::endl;
         }
   }
-  std::sort(digit_v_sort.begin(), digit_v_sort.end(), comparer);
-
-  for( const auto& one_digit : digit_v_sort ){
-    rowEnergy.push_back(one_digit.e());
+  //std::sort(digit_v_sort.begin(), digit_v_sort.end(), comparer);
+  //std::vector<double> rowEnergy1;
+  //for( const auto& one_digit : digit_v_sort ){
+    //rowEnergy.push_back(one_digit.e());
+  //}
+  
+  for (int i = 0; i < 5; i++){
+    for (int j = 0; j < 5; j++){
+      rowEnergy.push_back(vector_cells[i][j]);
+    }
   }
+
   return true;
 }
 

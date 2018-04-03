@@ -17,18 +17,12 @@
 
 #include "XGBClassifierPhPi0.h"
 
-//using namespace LHCb;
-
-//#include "TMV_MLP_inner.C"
-//#include "TMV_MLP_middle.C"
-//#include "TMV_MLP_outer.C"
-
 
 /** @class GammaPi0XGBoostTool GammaPi0XGBoostTool.h
  *
  *
- *  @author Miriam Calvo Gomez
- *  @date   2010-03-29
+ *  @author @sayankotor
+ *  @date   2018-03-24
  */
 
 struct functor_cell { 

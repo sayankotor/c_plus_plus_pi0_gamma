@@ -14,9 +14,9 @@
 using namespace LHCb;
 using namespace Gaudi::Units;
 //-----------------------------------------------------------------------------
-// Implementation file for class : GammaPi0SeparationTool
+// Implementation file for class : GammaPi0XGBoostTool
 //
-// 2010-03-24 : Miriam Calvo Gomez
+// 2018-03-24 : author @sayankotor
 //-----------------------------------------------------------------------------
 
 // Declaration of the Tool Factory

@@ -33,11 +33,14 @@
 
 struct functor_cell { 
    bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
+    if ((int)cell_a.cellID().area() == (int)cell_b.cellID().area()) {
       if ((int)cell_a.cellID().col() == (int)cell_b.cellID().col()) {
         return (int)cell_a.cellID().row() < (int)cell_b.cellID().row();
       }
       return ((int)cell_a.cellID().col() < (int)cell_b.cellID().col());
    }
+   return ((int)cell_a.cellID().area() < (int)cell_b.cellID().area());
+ }
 };
 
 class GammaPi0SeparationTool : public extends<GaudiTool, IGammaPi0SeparationTool>{

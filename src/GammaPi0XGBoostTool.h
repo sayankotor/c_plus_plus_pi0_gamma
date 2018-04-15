@@ -27,12 +27,72 @@
 
 struct functor_cell { 
    bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
+    if ((int)cell_a.cellID().area() == (int)cell_b.cellID().area()) {
       if ((int)cell_a.cellID().col() == (int)cell_b.cellID().col()) {
         return (int)cell_a.cellID().row() < (int)cell_b.cellID().row();
       }
       return ((int)cell_a.cellID().col() < (int)cell_b.cellID().col());
    }
+   return ((int)cell_a.cellID().area() < (int)cell_b.cellID().area());
+ }
 };
+
+struct calorimeter_geometry {
+  int row_size = 312;
+  int col_size = 384;
+  std::vector<std::vector<double>> vector_cellss  = std::vector<std::vector<double>> (5, std::vector<double>(5, 0.0));
+  std::vector<std::pair<LHCb::CaloCellID, double>> help = std::vector<std::pair<LHCb::CaloCellID, double>>(312, std::make_pair(LHCb::CaloCellID(0,0,0,0), 6.0)); 
+  std::vector<std::vector<std::pair<LHCb::CaloCellID, double>> > c_geometry = std::vector<std::vector<std::pair<LHCb::CaloCellID, double>> >(384, help);
+  bool init() {
+      // define 0-area
+      for (int i = 0; i < col_size; i++){
+        for (int j = 0; j< row_size; j++){
+          c_geometry[i][j] = std::make_pair(LHCb::CaloCellID(2, 0, j/6, i/6), 36.0);
+        }
+      }
+      //define 1-area
+      for (int i = 96; i < 288; i++){
+        for (int j = 96; j< 216; j++){
+          c_geometry[i][j] = std::make_pair(LHCb::CaloCellID(2, 1, (j - 96)/3, (i - 96)/3), 9.0);
+        }
+      }
+      //define 2-area
+      for (int i = 144; i < 240; i++){
+        for (int j = 120; j< 192; j++){
+          c_geometry[i][j] = std::make_pair(LHCb::CaloCellID(2, 2, (j-120)/2, (i-144)/2), 4.0);
+        }
+      }
+      return true;
+  } 
+
+  int get_x(int area, int row) {
+      if (area == 0){
+        return row*6;
+      }
+      else if (area == 1){
+        return 96 + row*3;
+      }
+      else if (area == 2){
+        return 144 + row*2;
+      }
+      return -10;
+  }
+
+  int get_y(int area, int col) {
+      if (area == 0){
+        return col*6;
+      }
+      else if (area == 1){
+        return 96 + col*3;
+      }
+      else if (area == 2){
+        return 120 + col*2;
+      }
+      return -10;
+  }
+
+};
+
 
 class GammaPi0XGBoostTool : public extends<GaudiTool, IGammaPi0SeparationTool>{
 public:
@@ -81,10 +141,12 @@ private:
 
   const DeCalorimeter* m_ecal = nullptr; 
 
+
   double XGBDiscriminant(int area, std::vector<double>& row_energies);
 
   std::map<std::string,double> m_data;
   std::map<std::string,double> m_prsdata;
+  calorimeter_geometry m_cgeom;
   double m_def = -1.e+06;
 };
 #endif // GammaPi0XGBoostTool_H

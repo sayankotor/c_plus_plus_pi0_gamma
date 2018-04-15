@@ -48,6 +48,11 @@ StatusCode GammaPi0XGBoostTool::initialize() {
 
   /// Retrieve geometry of detector
   m_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
+
+  if (!m_cgeom.init()){
+    std::cout<<"init do not succes"<<std::endl;
+    return 0;
+  }
   
 
   // TMVA discriminant
@@ -116,6 +121,10 @@ double GammaPi0XGBoostTool::isPhoton(const LHCb::CaloHypo* hypo){
   return prediction_xgb;
 }
 
+//bool recreate(std::vector<std::vector<<double>>& initial_vector, ){
+
+//}
+
 double GammaPi0XGBoostTool::XGBDiscriminant(int area, std::vector<double>& row_energies)
 {
 
@@ -127,6 +136,80 @@ double GammaPi0XGBoostTool::XGBDiscriminant(int area, std::vector<double>& row_e
         return value;
 }
 
+double sum
+
+std::vector<double> GammaPi0XGBoostTool::restore_one(int home_area, int n_area, std::vector<LHCb::CaloDigit>& additional_elems){
+  std::vector<std::vector<double>> home_energy = std::vector<std::vector<double>>(5*6, std::vector<double>(6, 0.0));
+  std::vector<double> answ (5, 0.0);
+  if (n_area == 0){
+    for (int i = 0; i< additional_elems.size(); i++)
+      for (int j = 0; j < 6; j++)
+        for (int k = 0; k < 6; k++){
+         home_energy[i*6 + k][j] = additional_elems[i].e()/36.0;
+        }
+
+  }
+
+  if (n_area == 1){
+    for (int i = 0; i< additional_elems.size(); i++)
+      for (int j = 0; j < 3; j++)
+        for (int k = 0; k < 3; k++){
+         home_energy[i*3 + k][j] = additional_elems[i].e()/9.0;
+        }
+
+  }
+
+  if (n_area == 2){
+    for (int i = 0; i< additional_elems.size(); i++)
+      for (int j = 0; j < 2; j++)
+        for (int k = 0; k < 2; k++){
+         home_energy[i*2 + k][j] = additional_elems[i].e()/2.0;
+        }
+
+  }
+  
+  if (home_area == 0){
+    for (int i = 0; i< 5; i++)
+      for (int j = 0; j < 6; j++)
+        for (int k = 0; k < 6; k++){
+         answ [i] += home_energy[i*6 + k][j]
+        }
+  }
+
+  if (home_area == 1){
+    for (int i = 0; i< 5; i++)
+      for (int j = 0; j < 3; j++)
+        for (int k = 0; k < 3; k++){
+         answ [i] += home_energy[i*3 + k][j]
+        }
+  }
+
+  if (home_area == 2){
+    for (int i = 0; i< 5; i++)
+      for (int j = 0; j < 2; j++)
+        for (int k = 0; k < 2; k++){
+         answ [i] += home_energy[i*2 + k][j]
+        }
+  }
+
+  return answ;
+
+}
+
+std::vector<std::pair<int,int> > GammaPi0XGBoostTool::check_vector(std::vector<double>& vector_cells){
+  std::vector<std::pair<int,int> > answ;
+  for (int i = 0; i < 5; i++){
+    if (vector_cells[i][0] == vector_cells[i][1] = vector_cells[i][2] = vector_cells[i][3] = vector_cells[i][4]){
+      answ = {std::make_pair(i, 0), std::make_pair(i, 1), std::make_pair(i, 2), std::make_pair(i, 3), std::make_pair(i, 4)};
+      return answ;
+    } 
+    if (vector_cells[0][i] == vector_cells[1][i] = vector_cells[2][i] = vector_cells[3][i] = vector_cells[4][i]){
+      answ = {std::make_pair(0, i), std::make_pair(1, i), std::make_pair(2, i), std::make_pair(3, i), std::make_pair(4, i)};
+      return answ;
+    } 
+  }
+}
+
 bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy){
   if( NULL == hypo)return false;
   LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
@@ -134,6 +217,10 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
   if( NULL == cluster)return false;
 
   LHCb::CaloCellID centerID = cluster->seed();
+  std::cout<<std::endl;
+  std::cout<<"calo area row col "<<centerID.calo()<<" "<<centerID.area()<<" "<<centerID.row()<<" "<<centerID.col()<<std::endl;
+  std::cout<<"get x "<<m_cgeom.get_x(centerID.area(), centerID.row())<<std::endl;
+  std::cout<<"get y "<<m_cgeom.get_y(centerID.area(), centerID.col())<<std::endl;
   
   
   CaloNeighbors n_vector = m_ecal->zsupNeighborCells(centerID);
@@ -154,9 +241,6 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
 
   std::cout<<n_set.size()<<std::endl;
   std::cout<<std::endl;
-  if (n_set.size() < 25){
-    return false;
-  }
 
   std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
   
@@ -173,6 +257,19 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
         continue;
       }
     }
+  }
+
+  if (n_set.size() < 20){
+    return false;
+  }
+  if (n_set.size() < 25){
+    for (auto & elem : n_set1){
+      std::cout<<"r c a "<<elem.row()<<" "<<elem.col()<<" "<<elem.area()<<std::endl;
+    }
+    std::vector<double> restored = restore_one(centerID.area(), additional_elems.begin()->area(), additional_elems);
+    std::vector<std::pair<int,int> > missed = check_vector(vector_cells);
+    std::cout<<std::endl;
+    return false;
   } 
 
   

@@ -110,6 +110,9 @@ public:
 
   bool GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy);
 
+  std::vector <std::vector<std::pair<int,int> > > CheckVector(std::vector<std::vector<double> >& vector_cells);
+  std::vector<double> RestoreOne(int home_area, int n_area, std::vector<LHCb::CaloDigit>& additional_elems);
+
   bool ClusterVariables(const LHCb::CaloHypo* hypo,
                         double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
                         double& Eseed, double& E2, int& area) override;

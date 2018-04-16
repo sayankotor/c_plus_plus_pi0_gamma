@@ -136,9 +136,7 @@ double GammaPi0XGBoostTool::XGBDiscriminant(int area, std::vector<double>& row_e
         return value;
 }
 
-double sum
-
-std::vector<double> GammaPi0XGBoostTool::restore_one(int home_area, int n_area, std::vector<LHCb::CaloDigit>& additional_elems){
+std::vector<double> GammaPi0XGBoostTool::RestoreOne(int home_area, int n_area, std::vector<LHCb::CaloDigit>& additional_elems){
   std::vector<std::vector<double>> home_energy = std::vector<std::vector<double>>(5*6, std::vector<double>(6, 0.0));
   std::vector<double> answ (5, 0.0);
   if (n_area == 0){
@@ -172,7 +170,7 @@ std::vector<double> GammaPi0XGBoostTool::restore_one(int home_area, int n_area, 
     for (int i = 0; i< 5; i++)
       for (int j = 0; j < 6; j++)
         for (int k = 0; k < 6; k++){
-         answ [i] += home_energy[i*6 + k][j]
+         answ [i] += home_energy[i*6 + k][j];
         }
   }
 
@@ -180,7 +178,7 @@ std::vector<double> GammaPi0XGBoostTool::restore_one(int home_area, int n_area, 
     for (int i = 0; i< 5; i++)
       for (int j = 0; j < 3; j++)
         for (int k = 0; k < 3; k++){
-         answ [i] += home_energy[i*3 + k][j]
+         answ [i] += home_energy[i*3 + k][j];
         }
   }
 
@@ -188,7 +186,7 @@ std::vector<double> GammaPi0XGBoostTool::restore_one(int home_area, int n_area, 
     for (int i = 0; i< 5; i++)
       for (int j = 0; j < 2; j++)
         for (int k = 0; k < 2; k++){
-         answ [i] += home_energy[i*2 + k][j]
+         answ [i] += home_energy[i*2 + k][j];
         }
   }
 
@@ -196,18 +194,26 @@ std::vector<double> GammaPi0XGBoostTool::restore_one(int home_area, int n_area, 
 
 }
 
-std::vector<std::pair<int,int> > GammaPi0XGBoostTool::check_vector(std::vector<double>& vector_cells){
-  std::vector<std::pair<int,int> > answ;
+std::vector <std::vector<std::pair<int,int> > > GammaPi0XGBoostTool::CheckVector(std::vector<std::vector<double> >& vector_cells){
+  std::vector <std::vector<std::pair<int,int> > > answ;
+  answ.reserve(25);
   for (int i = 0; i < 5; i++){
-    if (vector_cells[i][0] == vector_cells[i][1] = vector_cells[i][2] = vector_cells[i][3] = vector_cells[i][4]){
-      answ = {std::make_pair(i, 0), std::make_pair(i, 1), std::make_pair(i, 2), std::make_pair(i, 3), std::make_pair(i, 4)};
-      return answ;
+    if (vector_cells[i][0] == 0.0 && vector_cells[i][1] == 0.0 && vector_cells[i][2] == 0.0 && vector_cells[i][3] == 0.0 && vector_cells[i][4] == 0.0){
+      std::vector<std::pair<int,int> > answ_local = {std::make_pair(i, 0), std::make_pair(i, 1), std::make_pair(i, 2), std::make_pair(i, 3), std::make_pair(i, 4)};
+      //std::cout<<std::endl<<"check vector"<<std::endl;
+      //std::cout<<"i "<<i<<std::endl;
+      //std::cout<<"vector_cells[i][0] == vector_cells[i][1]"<<std::endl;
+      answ.emplace_back(answ_local);
     } 
-    if (vector_cells[0][i] == vector_cells[1][i] = vector_cells[2][i] = vector_cells[3][i] = vector_cells[4][i]){
-      answ = {std::make_pair(0, i), std::make_pair(1, i), std::make_pair(2, i), std::make_pair(3, i), std::make_pair(4, i)};
-      return answ;
+    if (vector_cells[0][i] == 0.0 && vector_cells[1][i] == 0.0 && vector_cells[2][i] == 0.0 && vector_cells[3][i] == 0.0 && vector_cells[4][i] == 0.0){
+      std::vector<std::pair<int,int> > answ_local = {std::make_pair(0, i), std::make_pair(1, i), std::make_pair(2, i), std::make_pair(3, i), std::make_pair(4, i)};
+      //std::cout<<std::endl<<"check vector"<<std::endl;
+      //std::cout<<"i "<<i<<std::endl;
+      //std::cout<<"vector_cells[0][i] == vector_cells[1][i]"<<std::endl;
+      answ.emplace_back(answ_local);
     } 
   }
+  return answ;
 }
 
 bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy){
@@ -239,6 +245,14 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
       n_set1.insert(new_set1.begin(), new_set1.end());
   }
 
+  CaloNeighbors additional_neib;
+  additional_neib.reserve(n_set1.size() - n_set.size() + 1);
+  for (const auto & elem : n_set1){
+    if (n_set.find(elem) == n_set.end()){
+      additional_neib.push_back(elem);
+    }
+  }
+
   std::cout<<n_set.size()<<std::endl;
   std::cout<<std::endl;
 
@@ -254,22 +268,133 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
       if (test) {
          vector_cells[col_number - (int)centerID.col() + 2][row_number - (int)centerID.row() + 2] = test->e();
       } else {
+        if (n_set.size() < 25){
+          std::cout<<std::endl<<"missed in bound"<<std::endl;
+        } else {
+          std::cout<<std::endl<<"missed simple"<<std::endl;
+        }
         continue;
       }
     }
   }
 
+  std::cout<<"vector_cells"<<std::endl;
+
+    for (int i = 0; i < 5; i++){
+        for (int j = 0; j < 5; j++){
+          std::cout<<i<<" "<<j<<" "<<vector_cells[i][j];
+          std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
+    }
+
   if (n_set.size() < 20){
     return false;
+    for (int i = 0; i < 5; i++){
+        for (int j = 0; j < 5; j++){
+          std::cout<<i<<" "<<j<<" "<<vector_cells[i][j];
+          std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
+    }
+  
+
+    //makestd::vector<double> restored = restore_one(centerID.area(), additional_neib.begin()->area(), additional_neib);
+    std::vector<std::vector<std::pair<int,int> > > missed = CheckVector(vector_cells);
+    std::cout<<"missed size"<<missed.size()<<std::endl;
+    std::cout<<"missed < 20 0"<<std::endl;
+    for (auto & elem : missed[0]){
+      std::cout<<elem.first<<" "<<elem.second<<std::endl;
+    }
+
+    std::cout<<"missed < 20 1"<<std::endl;
+    for (auto & elem : missed[1]){
+      std::cout<<elem.first<<" "<<elem.second<<std::endl;
+    }
+    
+    
+    std::cout<<std::endl;
   }
+
+
   if (n_set.size() < 25){
+    std::cout<<n_set.size()<<std::endl;
+    std::cout<<"full set "<<std::endl;
     for (auto & elem : n_set1){
       std::cout<<"r c a "<<elem.row()<<" "<<elem.col()<<" "<<elem.area()<<std::endl;
     }
-    std::vector<double> restored = restore_one(centerID.area(), additional_elems.begin()->area(), additional_elems);
-    std::vector<std::pair<int,int> > missed = check_vector(vector_cells);
     std::cout<<std::endl;
-    return false;
+
+    for (auto & elem : n_set){
+      std::cout<<"r c a "<<elem.row()<<" "<<elem.col()<<" "<<elem.area()<<std::endl;
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"additional set "<<std::endl;
+    for (auto & elem : additional_neib){
+      std::cout<<"r c a "<<elem.row()<<" "<<elem.col()<<" "<<elem.area()<<std::endl;
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"vector_cells1"<<std::endl;
+
+    for (int i = 0; i < 5; i++){
+        for (int j = 0; j < 5; j++){
+          std::cout<<i<<" "<<j<<" "<<vector_cells[i][j];
+          std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
+    }
+  
+    std::vector<LHCb::CaloDigit> neighbor_for_restore;
+    neighbor_for_restore.reserve(additional_neib.size()+1);
+    auto prev_test = LHCb::CaloDigit(LHCb::CaloCellID(2,0,0,0), 0.0);
+    for (const auto& id_: additional_neib){
+        auto test = digits_full->object(id_);
+        if (test){
+          prev_test = *test;
+          neighbor_for_restore.emplace_back(*test);
+        }
+        else {
+          std::cout<<std::endl<<"missed in bound"<<std::endl;
+          neighbor_for_restore.emplace_back(prev_test);
+        }
+    }
+
+    std::cout<<"neighbor_for_restore"<<std::endl;
+    for (auto & elem : neighbor_for_restore){
+      std::cout<<elem<<std::endl;
+    }
+    
+    std::cout<<std::endl;
+
+    std::vector<double> restored = RestoreOne(centerID.area(), additional_neib.begin()->area(), neighbor_for_restore);
+    std::vector<std::pair<int,int> > missed = CheckVector(vector_cells)[0];
+    std::cout<<"missed size "<<missed.size()<<std::endl;
+    std::cout<<"missed"<<std::endl;
+    for (auto & elem : missed){
+      std::cout<<elem.first<<" "<<elem.second<<std::endl;
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"restored"<<std::endl;
+    for (auto & elem : restored){
+      std::cout<<elem<<std::endl;
+    }
+    
+    std::cout<<std::endl;
+
+    std::cout<<"vector_cells3"<<std::endl;
+
+    for (int i = 0; i < 5; i++){
+        for (int j = 0; j < 5; j++){
+          std::cout<<i<<" "<<j<<" "<<vector_cells[i][j];
+          std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
+    }
+  
+    return true;
   } 
 
   

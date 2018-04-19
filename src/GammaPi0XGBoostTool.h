@@ -38,55 +38,49 @@ struct functor_cell {
 };
 
 struct calorimeter_geometry {
-  int row_size = 312;
+  int row_size = 384;
   int col_size = 384;
-  std::vector<std::vector<double>> vector_cellss  = std::vector<std::vector<double>> (5, std::vector<double>(5, 0.0));
-  std::vector<std::pair<LHCb::CaloCellID, double>> help = std::vector<std::pair<LHCb::CaloCellID, double>>(312, std::make_pair(LHCb::CaloCellID(0,0,0,0), 6.0)); 
-  std::vector<std::vector<std::pair<LHCb::CaloCellID, double>> > c_geometry = std::vector<std::vector<std::pair<LHCb::CaloCellID, double>> >(384, help);
+  std::vector<int> cell_size = std::vector<int>([6, 3, 2]);
+  std::vector<std::pair<double,double>> help = std::vector<std::pair<double,double>>(col_size, std::make_pair(0,36.0)); 
+  std::vector<std::vector<std::pair<double,double>> > c_geometry = std::vector<std::vector<std::pair<double,double>> > (row_size, help);
   bool init() {
-      // define 0-area
-      for (int i = 0; i < col_size; i++){
-        for (int j = 0; j< row_size; j++){
-          c_geometry[i][j] = std::make_pair(LHCb::CaloCellID(2, 0, j/6, i/6), 36.0);
-        }
-      }
       //define 1-area
-      for (int i = 96; i < 288; i++){
-        for (int j = 96; j< 216; j++){
-          c_geometry[i][j] = std::make_pair(LHCb::CaloCellID(2, 1, (j - 96)/3, (i - 96)/3), 9.0);
+      for (int i = 196; i < 288; i++){
+        for (int j = 132; j< 252; j++){
+          c_geometry[i][j] = std::make_pair(1, 9.0);
         }
       }
       //define 2-area
       for (int i = 144; i < 240; i++){
-        for (int j = 120; j< 192; j++){
-          c_geometry[i][j] = std::make_pair(LHCb::CaloCellID(2, 2, (j-120)/2, (i-144)/2), 4.0);
+        for (int j = 156; j< 228; j++){
+          c_geometry[i][j] = std::make_pair(2, 4.0);
         }
       }
       return true;
   } 
 
-  int get_x(int area, int row) {
+  int get_R ()(int area, int r) {
       if (area == 0){
-        return row*6;
+        return r/6;
       }
       else if (area == 1){
-        return 96 + row*3;
+        return r/3 - 32;
       }
       else if (area == 2){
-        return 144 + row*2;
+        return r/2 - 64;
       }
       return -10;
   }
 
-  int get_y(int area, int col) {
+  int get_r ()(int area, int R) {
       if (area == 0){
-        return col*6;
+        return R*6;
       }
       else if (area == 1){
-        return 96 + col*3;
+        return (R + 32)*3;
       }
       else if (area == 2){
-        return 120 + col*2;
+        return (R + 64)*2;
       }
       return -10;
   }
@@ -109,10 +103,7 @@ public:
   double isPhoton(const LHCb::CaloHypo* hypo) override;
 
   bool GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy);
-
-  std::vector <std::vector<std::pair<int,int> > > CheckVector(std::vector<std::vector<double> >& vector_cells);
-  std::vector<double> RestoreOne(int home_area, int n_area, std::vector<LHCb::CaloDigit>& additional_elems);
-
+  std::vector<std::vector<double>> GetCluster(LHCb::CaloCellID centerID);
   bool ClusterVariables(const LHCb::CaloHypo* hypo,
                         double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
                         double& Eseed, double& E2, int& area) override;

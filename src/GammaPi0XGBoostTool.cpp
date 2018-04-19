@@ -136,85 +136,7 @@ double GammaPi0XGBoostTool::XGBDiscriminant(int area, std::vector<double>& row_e
         return value;
 }
 
-std::vector<double> GammaPi0XGBoostTool::RestoreOne(int home_area, int n_area, std::vector<LHCb::CaloDigit>& additional_elems){
-  std::vector<std::vector<double>> home_energy = std::vector<std::vector<double>>(5*6, std::vector<double>(6, 0.0));
-  std::vector<double> answ (5, 0.0);
-  if (n_area == 0){
-    for (int i = 0; i< additional_elems.size(); i++)
-      for (int j = 0; j < 6; j++)
-        for (int k = 0; k < 6; k++){
-         home_energy[i*6 + k][j] = additional_elems[i].e()/36.0;
-        }
 
-  }
-
-  if (n_area == 1){
-    for (int i = 0; i< additional_elems.size(); i++)
-      for (int j = 0; j < 3; j++)
-        for (int k = 0; k < 3; k++){
-         home_energy[i*3 + k][j] = additional_elems[i].e()/9.0;
-        }
-
-  }
-
-  if (n_area == 2){
-    for (int i = 0; i< additional_elems.size(); i++)
-      for (int j = 0; j < 2; j++)
-        for (int k = 0; k < 2; k++){
-         home_energy[i*2 + k][j] = additional_elems[i].e()/2.0;
-        }
-
-  }
-  
-  if (home_area == 0){
-    for (int i = 0; i< 5; i++)
-      for (int j = 0; j < 6; j++)
-        for (int k = 0; k < 6; k++){
-         answ [i] += home_energy[i*6 + k][j];
-        }
-  }
-
-  if (home_area == 1){
-    for (int i = 0; i< 5; i++)
-      for (int j = 0; j < 3; j++)
-        for (int k = 0; k < 3; k++){
-         answ [i] += home_energy[i*3 + k][j];
-        }
-  }
-
-  if (home_area == 2){
-    for (int i = 0; i< 5; i++)
-      for (int j = 0; j < 2; j++)
-        for (int k = 0; k < 2; k++){
-         answ [i] += home_energy[i*2 + k][j];
-        }
-  }
-
-  return answ;
-
-}
-
-std::vector <std::vector<std::pair<int,int> > > GammaPi0XGBoostTool::CheckVector(std::vector<std::vector<double> >& vector_cells){
-  std::vector <std::vector<std::pair<int,int> > > answ;
-  answ.reserve(25);
-  for (int i = 0; i < 5; i++){
-    if (vector_cells[i][0] == 0.0 && vector_cells[i][1] == 0.0 && vector_cells[i][2] == 0.0 && vector_cells[i][3] == 0.0 && vector_cells[i][4] == 0.0){
-      std::vector<std::pair<int,int> > answ_local = {std::make_pair(i, 0), std::make_pair(i, 1), std::make_pair(i, 2), std::make_pair(i, 3), std::make_pair(i, 4)};
-      //std::cout<<std::endl<<"check vector"<<std::endl;
-      //std::cout<<"i "<<i<<std::endl;
-      //std::cout<<"vector_cells[i][0] == vector_cells[i][1]"<<std::endl;
-      answ.emplace_back(answ_local);
-    } 
-    if (vector_cells[0][i] == 0.0 && vector_cells[1][i] == 0.0 && vector_cells[2][i] == 0.0 && vector_cells[3][i] == 0.0 && vector_cells[4][i] == 0.0){
-      std::vector<std::pair<int,int> > answ_local = {std::make_pair(0, i), std::make_pair(1, i), std::make_pair(2, i), std::make_pair(3, i), std::make_pair(4, i)};
-      //std::cout<<std::endl<<"check vector"<<std::endl;
-      //std::cout<<"i "<<i<<std::endl;
-      //std::cout<<"vector_cells[0][i] == vector_cells[1][i]"<<std::endl;
-      answ.emplace_back(answ_local);
-    } 
-  }
-  return answ;
-}
 
 bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy){
   if( NULL == hypo)return false;
@@ -300,15 +222,15 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
   
 
     //makestd::vector<double> restored = restore_one(centerID.area(), additional_neib.begin()->area(), additional_neib);
-    std::vector<std::vector<std::pair<int,int> > > missed = CheckVector(vector_cells);
+    std::vector<std::pair<int,int> > missed = CheckVector(vector_cells);
     std::cout<<"missed size"<<missed.size()<<std::endl;
     std::cout<<"missed < 20 0"<<std::endl;
-    for (auto & elem : missed[0]){
+    for (auto & elem : missed){
       std::cout<<elem.first<<" "<<elem.second<<std::endl;
     }
 
     std::cout<<"missed < 20 1"<<std::endl;
-    for (auto & elem : missed[1]){
+    for (auto & elem : missed){
       std::cout<<elem.first<<" "<<elem.second<<std::endl;
     }
     
@@ -348,16 +270,19 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
   
     std::vector<LHCb::CaloDigit> neighbor_for_restore;
     neighbor_for_restore.reserve(additional_neib.size()+1);
-    auto prev_test = LHCb::CaloDigit(LHCb::CaloCellID(2,0,0,0), 0.0);
+    //auto& prev_test = 0;
     for (const auto& id_: additional_neib){
         auto test = digits_full->object(id_);
         if (test){
-          prev_test = *test;
+          //prev_test = *test;
           neighbor_for_restore.emplace_back(*test);
         }
+        //else if (prev_test){
+          //std::cout<<std::endl<<"missed in bound"<<std::endl;
+          //neighbor_for_restore.emplace_back(prev_test);
+        //}
         else {
           std::cout<<std::endl<<"missed in bound"<<std::endl;
-          neighbor_for_restore.emplace_back(prev_test);
         }
     }
 
@@ -368,8 +293,6 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
     
     std::cout<<std::endl;
 
-    std::vector<double> restored = RestoreOne(centerID.area(), additional_neib.begin()->area(), neighbor_for_restore);
-    std::vector<std::pair<int,int> > missed = CheckVector(vector_cells)[0];
     std::cout<<"missed size "<<missed.size()<<std::endl;
     std::cout<<"missed"<<std::endl;
     for (auto & elem : missed){
@@ -394,7 +317,6 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
         std::cout<<std::endl;
     }
   
-    return true;
   } 
 
   
@@ -406,6 +328,31 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<d
   
   return true;
 }
+
+std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(LHCb::CaloCellID centerID, LHCb::CaloDigits * digits_full){
+      int start_x = m_cgeom.get_r(centerID.area(), centerID.col());
+      int start_y = m_cgeom.get_r(centerID.area(), centerID.row());
+      int expected_area = centerID.area();
+      int shift = cell_size[expected_area];
+      std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
+      for (int i = -2; i < 3; i++){
+        for (int j = -2; j < 3; j++){
+          int local_x = start_x + i*shift;
+          int local_y = start_y + j*shift;
+          for (int k = local_x; k < local_x + shift; k++){
+            for (int l = local_y; l < local_y + shift; l++){
+              int local_area = c_geometry[k][l].first;
+              int local_col = m_cgeom.get_R(local_area, k);
+              int local_row = m_cgeom.get_R(local_area, l);
+              const auto id_ = LHCb::CaloCellID(centerID.calo(), centerID.area(), local_raw, local_col);
+              auto * test = digits_full->object(id_);
+              if (test){
+                vector_cells[i+2][j+2] += c_geometry[k][l].second * test->e();
+              }
+            }
+          }
+      }
+  }
 
 bool GammaPi0XGBoostTool::ClusterVariables(const LHCb::CaloHypo* hypo,
                                               double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,

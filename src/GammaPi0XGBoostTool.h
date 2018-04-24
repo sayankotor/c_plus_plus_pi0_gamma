@@ -40,12 +40,17 @@ struct functor_cell {
 struct calorimeter_geometry {
   int row_size = 384;
   int col_size = 384;
-  std::vector<int> cell_size = std::vector<int>([6, 3, 2]);
+  std::vector<int> cell_size = {6, 3, 2};
+  std::map<int,int> cell_area = {
+                { 6, 0 },
+                { 3, 1 },
+                { 2, 2 } };
+
   std::vector<std::pair<double,double>> help = std::vector<std::pair<double,double>>(col_size, std::make_pair(0,36.0)); 
   std::vector<std::vector<std::pair<double,double>> > c_geometry = std::vector<std::vector<std::pair<double,double>> > (row_size, help);
   bool init() {
       //define 1-area
-      for (int i = 196; i < 288; i++){
+      for (int i = 96; i < 288; i++){
         for (int j = 132; j< 252; j++){
           c_geometry[i][j] = std::make_pair(1, 9.0);
         }
@@ -59,20 +64,25 @@ struct calorimeter_geometry {
       return true;
   } 
 
-  int get_R ()(int area, int r) {
+  int get_R (int area, int r) {
+      //std::cout<<std::endl;
+      //std::cout<<area<<" "<<r<<std::endl;
       if (area == 0){
+        //std::cout<<0<<std::endl;
         return r/6;
       }
       else if (area == 1){
+        //std::cout<<1<<std::endl;
         return r/3 - 32;
       }
       else if (area == 2){
+        //std::cout<<2<<std::endl;
         return r/2 - 64;
       }
       return -10;
   }
 
-  int get_r ()(int area, int R) {
+  int get_r (int area, int R) {
       if (area == 0){
         return R*6;
       }
@@ -103,10 +113,7 @@ public:
   double isPhoton(const LHCb::CaloHypo* hypo) override;
 
   bool GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy);
-  std::vector<std::vector<double>> GetCluster(LHCb::CaloCellID centerID);
-  bool ClusterVariables(const LHCb::CaloHypo* hypo,
-                        double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
-                        double& Eseed, double& E2, int& area) override;
+  std::vector<std::vector<double>> GetCluster(LHCb::CaloCellID centerID, LHCb::CaloDigits * digits_full);
 
   double inputData(std::string data) override { //@TODO: const-ify
     // try ecal data
@@ -120,6 +127,8 @@ public:
   }
   std::map<std::string,double> inputDataMap() override {return m_data;}
   std::map<std::string,double> inputPrsDataMap() override {return m_prsdata;}
+  bool ClusterVariables(const LHCb::CaloHypo* hypo, double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
+  double& Eseed, double& E2, int& area);
   bool PrsVariables(const LHCb::CaloHypo* hypo, double& r2PS, double& asymPS, double& kappaPS, double& r2r4PS,                                           double& eSumPS, double& ePrs, double& eMaxPS, double& e2ndPS, double& ecornerPS, 
     int& multiPS, int& multiPS15, int& multiPS30, int& multiPS45){return true;};
   double isPhoton(const double* v){return 0.0;};

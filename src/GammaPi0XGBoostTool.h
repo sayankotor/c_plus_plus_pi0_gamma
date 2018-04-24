@@ -112,7 +112,7 @@ public:
   //double isPhoton(const LHCb::Particle* gamma);
   double isPhoton(const LHCb::CaloHypo* hypo) override;
 
-  bool GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy);
+  bool GetRawEnergy(const LHCb::CaloHypo* hypo, bool isBorder, std::vector<double>& rowEnergy);
   std::vector<std::vector<double>> GetCluster(LHCb::CaloCellID centerID, LHCb::CaloDigits * digits_full);
 
   double inputData(std::string data) override { //@TODO: const-ify
@@ -141,11 +141,14 @@ private:
   std::unique_ptr<XGBClassifierPhPi0> m_xgb0;
   std::unique_ptr<XGBClassifierPhPi0> m_xgb1;
   std::unique_ptr<XGBClassifierPhPi0> m_xgb2;
+  std::unique_ptr<XGBClassifierPhPi0> m_xgb0_b;
+  std::unique_ptr<XGBClassifierPhPi0> m_xgb1_b;
+  std::unique_ptr<XGBClassifierPhPi0> m_xgb2_b;
 
   const DeCalorimeter* m_ecal = nullptr; 
 
 
-  double XGBDiscriminant(int area, std::vector<double>& row_energies);
+  double XGBDiscriminant(int area, bool isBorder, std::vector<double>& row_energies);
 
   std::map<std::string,double> m_data;
   std::map<std::string,double> m_prsdata;

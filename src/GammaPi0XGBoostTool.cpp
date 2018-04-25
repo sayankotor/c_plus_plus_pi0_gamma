@@ -119,7 +119,7 @@ double GammaPi0XGBoostTool::isPhoton(const LHCb::CaloHypo* hypo){
     std::cout<<"else: raw energy size: "<<rawEnergyVector.size()<<std::endl;
   }
   double prediction_xgb = XGBDiscriminant(area, isBorder, rawEnergyVector);
-  std::cout<<"prediction_xgb: "<<prediction_xgb<<std::endl;
+  std::cout<<"border "<<isBorder<<" prediction_xgb: "<<prediction_xgb<<std::endl;
   //return photonDiscriminant(area, fr2, fr2r4, fasym, fkappa, Eseed, E2,
                             //r2PS, asymPS, eMaxPS, e2ndPS, multiPS, multiPS15, multiPS30, multiPS45);
   return prediction_xgb;
@@ -149,7 +149,7 @@ double& Eseed, double& E2, int& area) {
   return true;
 }
 
-bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool isBorder, std::vector<double>& rowEnergy){
+bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy){
   if( NULL == hypo)return false;
   LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
@@ -191,50 +191,34 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool isBorder
   std::vector<int> col_numbers = {(int)centerID.col() - 2, (int)centerID.col() - 1, (int)centerID.col(), (int)centerID.col() + 1, (int)centerID.col() + 2};
   std::vector<int> row_numbers = {(int)centerID.row() - 2, (int)centerID.row() - 1, (int)centerID.row(), (int)centerID.row() + 1, (int)centerID.row() + 2};
 
-
-  if (n_set.size() < 25){
-    return false;
+  if (n_set.size() < 25)
+  {
+      isBorder = true;
+      vector_cells = GetCluster(centerID, digits_full);
   }
 
-  else {
-        for (auto& col_number: col_numbers){
-            for (auto& row_number: row_numbers){
-                const auto id_ = LHCb::CaloCellID(centerID.calo(), centerID.area(), row_number, col_number);
-                auto * test = digits_full->object(id_);
-                if (test) {
-                    vector_cells[col_number - (int)centerID.col() + 2][row_number - (int)centerID.row() + 2] = test->e();
-                } else {
-                    continue;
-                }
-            }
+  else 
+  {
+      for (auto& col_number: col_numbers){
+          for (auto& row_number: row_numbers){
+              const auto id_ = LHCb::CaloCellID(centerID.calo(), centerID.area(), row_number, col_number);
+              auto * test = digits_full->object(id_);
+              if (test) {
+                  vector_cells[col_number - (int)centerID.col() + 2][row_number - (int)centerID.row() + 2] = test->e();
+              } else {
+                  continue;
+              }
           }
-        }
+      }
+  }
 
   
 
   for (int i = 0; i < 5; i++){
       for (int j = 0; j < 5; j++){
-        rowEnergy[i*5 + j] = vector_cells[i][j];
-        std::cout<<i<<" "<<j<<" vector_cells "<<vector_cells[i][j]<<std::endl;;
-        std::cout<<i<<" "<<j<<" vector_cells1 "<<vector_cells1[i][j]<<std::endl;
-        if (abs(vector_cells[i][j] - vector_cells1[i][j]) > 0.001){
-            std::cout<<"NOT EQUAL"<<std::endl;
-     //std::cout<<"calo area row col "<<centerID.calo()<<" "<<centerID.area()<<" "<<centerID.row()<<" "<<centerID.col()<<std::endl;
-     //std::cout<<"get x "<<m_cgeom.get_r(centerID.area(), centerID.row())<<std::endl;
-     //std::cout<<"get y "<<m_cgeom.get_r(centerID.area(), centerID.col())<<std::endl;
-
-            //std::cout<<i<<" "<<j<<" vector_cells "<<vector_cells[i][j]<<std::endl;;
-            //std::cout<<i<<" "<<j<<" vector_cells1 "<<vector_cells1[i][j]<<std::endl;      
-        }
-        else {
-            //std::cout<<"EQUAL"<<std::endl;
-        }
       rowEnergy[i*5 + j] = vector_cells[i][j];
     }
   }
-   
-  //double a = vector_cells[200][200];
-  //std::cout<<a;
   return true;
 }
 
@@ -254,11 +238,9 @@ std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(LHCb::CaloCellI
           for (int k = local_x; k < local_x + shift; k++){
             for (int l = local_y; l < local_y + shift; l++){
               int local_area = m_cgeom.c_geometry[k][l].first;
-              int local_col = m_cgeom.get_R(centerID.area(), k);
-            
-              int local_row = m_cgeom.get_R(centerID.area(), l);
+              int local_col = m_cgeom.get_R(local_area, k);           
+              int local_row = m_cgeom.get_R(local_area, l);
               const auto id_ = LHCb::CaloCellID(centerID.calo(), local_area, local_row, local_col);
-              //std::cout<<"id_ calo area row col 2 "<<id_.calo()<<" "<<id_.area()<<" "<<local_row<<" "<<local_col<<std::endl;
               auto * test = digits_full->object(id_);
               if (test){
                 vector_cells[i+2][j+2] +=  double(test->e())/m_cgeom.c_geometry[k][l].second;

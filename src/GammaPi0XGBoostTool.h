@@ -112,7 +112,7 @@ public:
   //double isPhoton(const LHCb::Particle* gamma);
   double isPhoton(const LHCb::CaloHypo* hypo) override;
 
-  bool GetRawEnergy(const LHCb::CaloHypo* hypo, bool isBorder, std::vector<double>& rowEnergy);
+  bool GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy);
   std::vector<std::vector<double>> GetCluster(LHCb::CaloCellID centerID, LHCb::CaloDigits * digits_full);
 
   double inputData(std::string data) override { //@TODO: const-ify

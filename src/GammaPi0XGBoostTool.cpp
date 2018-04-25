@@ -185,28 +185,17 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool isBorder
   std::cout<<std::endl;
 
   std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
+  std::vector<std::vector<double>> vector_cells1 (5, std::vector<double>(5, 0.0));
+  vector_cells1 = GetCluster(centerID, digits_full);
   
   std::vector<int> col_numbers = {(int)centerID.col() - 2, (int)centerID.col() - 1, (int)centerID.col(), (int)centerID.col() + 1, (int)centerID.col() + 2};
   std::vector<int> row_numbers = {(int)centerID.row() - 2, (int)centerID.row() - 1, (int)centerID.row(), (int)centerID.row() + 1, (int)centerID.row() + 2};
 
 
   if (n_set.size() < 25){
-    std::cout<<" less 25 1"<<std::endl;
-    for (int i = 0; i < 5; i++){
-        for (int j = 0; j < 5; j++){
-            std::cout<<" i j "<<i<<" "<<j<<" "<<vector_cells[i][j]<<std::endl;
-        }
-      }
-    std::cout<<std::endl;
-    isBorder = true;
-    vector_cells = GetCluster(centerID, digits_full);
-    std::cout<<" less 25 2"<<std::endl;
-    for (int i = 0; i < 5; i++){
-        for (int j = 0; j < 5; j++){
-            std::cout<<" i j "<<i<<" "<<j<<" "<<vector_cells[i][j]<<std::endl;
-        }
-      }
-    } 
+    return false;
+  }
+
   else {
         for (auto& col_number: col_numbers){
             for (auto& row_number: row_numbers){
@@ -221,28 +210,31 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool isBorder
           }
         }
 
-  if (n_set.size() < 25){
-    std::cout<<" less 25 1"<<std::endl;
-    for (int i = 0; i < 5; i++){
-        for (int j = 0; j < 5; j++){
-            std::cout<<" i j "<<i<<" "<<j<<" "<<vector_cells[i][j]<<std::endl;
-        }
-      }
-    std::cout<<std::endl;
-    vector_cells = GetCluster(centerID, digits_full);
-    std::cout<<" less 25 2"<<std::endl;
-    for (int i = 0; i < 5; i++){
-        for (int j = 0; j < 5; j++){
-            std::cout<<" i j "<<i<<" "<<j<<" "<<vector_cells[i][j]<<std::endl;
-        }
-      }
-  } 
+  
 
   for (int i = 0; i < 5; i++){
-    for (int j = 0; j < 5; j++){
-    rowEnergy[i*5 + j] = vector_cells[i][j];
+      for (int j = 0; j < 5; j++){
+        rowEnergy[i*5 + j] = vector_cells[i][j];
+        std::cout<<i<<" "<<j<<" vector_cells "<<vector_cells[i][j]<<std::endl;;
+        std::cout<<i<<" "<<j<<" vector_cells1 "<<vector_cells1[i][j]<<std::endl;
+        if (abs(vector_cells[i][j] - vector_cells1[i][j]) > 0.001){
+            std::cout<<"NOT EQUAL"<<std::endl;
+     //std::cout<<"calo area row col "<<centerID.calo()<<" "<<centerID.area()<<" "<<centerID.row()<<" "<<centerID.col()<<std::endl;
+     //std::cout<<"get x "<<m_cgeom.get_r(centerID.area(), centerID.row())<<std::endl;
+     //std::cout<<"get y "<<m_cgeom.get_r(centerID.area(), centerID.col())<<std::endl;
+
+            //std::cout<<i<<" "<<j<<" vector_cells "<<vector_cells[i][j]<<std::endl;;
+            //std::cout<<i<<" "<<j<<" vector_cells1 "<<vector_cells1[i][j]<<std::endl;      
+        }
+        else {
+            //std::cout<<"EQUAL"<<std::endl;
+        }
+      rowEnergy[i*5 + j] = vector_cells[i][j];
     }
   }
+   
+  //double a = vector_cells[200][200];
+  //std::cout<<a;
   return true;
 }
 

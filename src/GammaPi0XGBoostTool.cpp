@@ -6,6 +6,7 @@
 #include "Event/RecHeader.h"
 #include "Event/CaloHypo.h"
 #include "Event/CaloCluster.h"
+#include <unordered_map>
 #include <iostream>
 #include <iomanip>
 // local
@@ -227,6 +228,7 @@ std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(LHCb::CaloCellI
       int start_y = m_cgeom.get_r(centerID.area(), centerID.row());
       int expected_area = centerID.area();
       int shift = m_cgeom.cell_size[expected_area];
+      std::unordered_map<LHCb::CaloCellID, double, cellID_hash> hash_of_energy;
       std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
       for (int i = -2; i < 3; i++){
         for (int j = -2; j < 3; j++){
@@ -241,9 +243,15 @@ std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(LHCb::CaloCellI
               int local_col = m_cgeom.get_R(local_area, k);           
               int local_row = m_cgeom.get_R(local_area, l);
               const auto id_ = LHCb::CaloCellID(centerID.calo(), local_area, local_row, local_col);
+              std::unordered_map<LHCb::CaloCellID, double, cellID_hash>::const_iterator is_exist = hash_of_energy.find (id_);
+              if (is_exist != hash_of_energy.end()){
+                vector_cells[i+2][j+2] +=  is_exist -> second /m_cgeom.c_geometry[k][l].second;
+                continue;
+              }
               auto * test = digits_full->object(id_);
               if (test){
                 vector_cells[i+2][j+2] +=  double(test->e())/m_cgeom.c_geometry[k][l].second;
+                hash_of_energy.insert(std::make_pair(id_, double(test->e())));
               }
             }
           }

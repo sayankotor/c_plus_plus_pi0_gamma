@@ -37,6 +37,19 @@ struct functor_cell {
  }
 };
 
+struct cellID_hash {
+    std::size_t operator () (const LHCb::CaloCellID &cell_id) const {
+        auto h1 = std::hash<int>{}(cell_id.calo());
+        auto h2 = std::hash<int>{}(cell_id.area());
+        auto h3 = std::hash<int>{}(cell_id.row());
+        auto h4 = std::hash<int>{}(cell_id.col());
+
+        // Mainly for demonstration purposes, i.e. works but is overly simple
+        // In the real world, use sth. like boost.hash_combine
+        return h1 ^ h2 ^ h3 ^ h4;  
+    }
+};
+
 struct calorimeter_geometry {
   int row_size = 384;
   int col_size = 384;

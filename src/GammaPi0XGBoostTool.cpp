@@ -20,12 +20,44 @@ using namespace Gaudi::Units;
 // 2018-03-24 : author @sayankotor
 //-----------------------------------------------------------------------------
 
+
+//Declare nessesary help functionality
+namespace {
+struct functor_cell { 
+  bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
+    if ((int)cell_a.cellID().area() == (int)cell_b.cellID().area()) {
+      if ((int)cell_a.cellID().col() == (int)cell_b.cellID().col()) {
+        return (int)cell_a.cellID().row() < (int)cell_b.cellID().row();
+      }
+      return ((int)cell_a.cellID().col() < (int)cell_b.cellID().col());
+    }
+    return ((int)cell_a.cellID().area() < (int)cell_b.cellID().area());
+  }
+};
+
+struct cellID_hash {
+  std::size_t operator () (const LHCb::CaloCellID &cell_id) const {
+      auto h1 = std::hash<int>{}(cell_id.calo());
+      auto h2 = std::hash<int>{}(cell_id.area());
+      auto h3 = std::hash<int>{}(cell_id.row());
+      auto h4 = std::hash<int>{}(cell_id.col());
+
+      // Mainly for demonstration purposes, i.e. works but is overly simple
+      // In the real world, use sth. like boost.hash_combine
+      return h1 ^ h2 ^ h3 ^ h4;  
+  }
+};
+
+}
+
 // Declaration of the Tool Factory
 DECLARE_TOOL_FACTORY( GammaPi0XGBoostTool )
 
 //=============================================================================
 // Standard constructor, initializes variables
 //=============================================================================
+calorimeter_geometry GammaPi0XGBoostTool::m_cgeom;
+
 GammaPi0XGBoostTool::GammaPi0XGBoostTool( const std::string& type,
                                                 const std::string& name,
                                                 const IInterface* parent )
@@ -150,7 +182,7 @@ double& Eseed, double& E2, int& area) {
   return true;
 }
 
-bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy){
+bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy) const{
   if( NULL == hypo)return false;
   LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
@@ -186,8 +218,6 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorde
   std::cout<<std::endl;
 
   std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
-  std::vector<std::vector<double>> vector_cells1 (5, std::vector<double>(5, 0.0));
-  vector_cells1 = GetCluster(centerID, digits_full);
   
   std::vector<int> col_numbers = {(int)centerID.col() - 2, (int)centerID.col() - 1, (int)centerID.col(), (int)centerID.col() + 1, (int)centerID.col() + 2};
   std::vector<int> row_numbers = {(int)centerID.row() - 2, (int)centerID.row() - 1, (int)centerID.row(), (int)centerID.row() + 1, (int)centerID.row() + 2};
@@ -223,7 +253,7 @@ bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorde
   return true;
 }
 
-std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(LHCb::CaloCellID centerID, LHCb::CaloDigits * digits_full){
+std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(const LHCb::CaloCellID& centerID, const LHCb::CaloDigits * digits_full) const{
       int start_x = m_cgeom.get_r(centerID.area(), centerID.col());
       int start_y = m_cgeom.get_r(centerID.area(), centerID.row());
       int expected_area = centerID.area();
@@ -259,3 +289,4 @@ std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(LHCb::CaloCellI
       }
       return vector_cells;
   }
+

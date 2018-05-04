@@ -25,31 +25,6 @@
  *  @date   2018-03-24
  */
 
-struct functor_cell { 
-   bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
-    if ((int)cell_a.cellID().area() == (int)cell_b.cellID().area()) {
-      if ((int)cell_a.cellID().col() == (int)cell_b.cellID().col()) {
-        return (int)cell_a.cellID().row() < (int)cell_b.cellID().row();
-      }
-      return ((int)cell_a.cellID().col() < (int)cell_b.cellID().col());
-   }
-   return ((int)cell_a.cellID().area() < (int)cell_b.cellID().area());
- }
-};
-
-struct cellID_hash {
-    std::size_t operator () (const LHCb::CaloCellID &cell_id) const {
-        auto h1 = std::hash<int>{}(cell_id.calo());
-        auto h2 = std::hash<int>{}(cell_id.area());
-        auto h3 = std::hash<int>{}(cell_id.row());
-        auto h4 = std::hash<int>{}(cell_id.col());
-
-        // Mainly for demonstration purposes, i.e. works but is overly simple
-        // In the real world, use sth. like boost.hash_combine
-        return h1 ^ h2 ^ h3 ^ h4;  
-    }
-};
-
 struct calorimeter_geometry {
   int row_size = 384;
   int col_size = 384;
@@ -113,7 +88,6 @@ struct calorimeter_geometry {
 
 class GammaPi0XGBoostTool : public extends<GaudiTool, IGammaPi0SeparationTool>{
 public:
-  functor_cell comparer;
   /// Standard constructor
   GammaPi0XGBoostTool( const std::string& type,
                           const std::string& name,
@@ -125,8 +99,8 @@ public:
   //double isPhoton(const LHCb::Particle* gamma);
   double isPhoton(const LHCb::CaloHypo* hypo) override;
 
-  bool GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy);
-  std::vector<std::vector<double>> GetCluster(LHCb::CaloCellID centerID, LHCb::CaloDigits * digits_full);
+  bool GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy) const;
+  std::vector<std::vector<double>> GetCluster(const LHCb::CaloCellID & centerID, const LHCb::CaloDigits * digits_full) const;
 
   double inputData(std::string data) override { //@TODO: const-ify
     // try ecal data
@@ -158,14 +132,14 @@ private:
   std::unique_ptr<XGBClassifierPhPi0> m_xgb1_b;
   std::unique_ptr<XGBClassifierPhPi0> m_xgb2_b;
 
-  const DeCalorimeter* m_ecal = nullptr; 
+  const DeCalorimeter* m_ecal = nullptr;
+  static calorimeter_geometry m_cgeom; 
 
 
   double XGBDiscriminant(int area, bool isBorder, std::vector<double>& row_energies);
 
   std::map<std::string,double> m_data;
   std::map<std::string,double> m_prsdata;
-  calorimeter_geometry m_cgeom;
   double m_def = -1.e+06;
 };
 #endif // GammaPi0XGBoostTool_H

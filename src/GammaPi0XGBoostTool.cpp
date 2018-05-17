@@ -121,26 +121,15 @@ StatusCode GammaPi0XGBoostTool::finalize() {
 
 
 double GammaPi0XGBoostTool::isPhoton(const LHCb::CaloHypo* hypo){
-  // clear all data
-  m_data.clear();
-  m_prsdata.clear();
 
   if ( !m_ecal ) return m_def;
   if ( LHCb::CaloMomentum(hypo).pt() < m_minPt) return m_def;
-
-  double fr2 = 0;
-  double fasym = 0;
-  double fkappa = 0;
-  double fr2r4 = 0;
-  double Eseed = 0;
-  double E2 = 0;
-  double Ecl = 0;
-  int area =0;
+  const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );
+  if (!cluster) return m_def;
+  int area = cluster->seed().area();
 
   std::vector<double> rawEnergyVector(25, 0.0);
 
-  // evaluate the NN inputs
-  bool ecalV = ClusterVariables(hypo, fr2, fasym, fkappa, fr2r4, Ecl, Eseed, E2, area);
   bool isBorder = false;
   bool rawEnergy = GetRawEnergy(hypo, isBorder, rawEnergyVector);
 
@@ -153,14 +142,9 @@ double GammaPi0XGBoostTool::isPhoton(const LHCb::CaloHypo* hypo){
   }
   double prediction_xgb = XGBDiscriminant(area, isBorder, rawEnergyVector);
   std::cout<<"border "<<isBorder<<" prediction_xgb: "<<prediction_xgb<<std::endl;
-  //return photonDiscriminant(area, fr2, fr2r4, fasym, fkappa, Eseed, E2,
-                            //r2PS, asymPS, eMaxPS, e2ndPS, multiPS, multiPS15, multiPS30, multiPS45);
   return prediction_xgb;
 }
 
-//bool recreate(std::vector<std::vector<<double>>& initial_vector, ){
-
-//}
 
 double GammaPi0XGBoostTool::XGBDiscriminant(int area, bool isBorder, std::vector<double>& row_energies)
 {
@@ -174,12 +158,6 @@ double GammaPi0XGBoostTool::XGBDiscriminant(int area, bool isBorder, std::vector
                        : -1e10 );
         //info() << " INPUT TO GAMMA/PI0 : NN[" << input << "]= " << value << " (area="<<area<<")"<< endmsg;
         return value;
-}
-
-bool GammaPi0XGBoostTool::ClusterVariables(const LHCb::CaloHypo* hypo,
-                                              double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
-double& Eseed, double& E2, int& area) {
-  return true;
 }
 
 bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy) const{

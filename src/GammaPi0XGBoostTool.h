@@ -102,23 +102,25 @@ public:
   bool GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy) const;
   std::vector<std::vector<double>> GetCluster(const LHCb::CaloCellID & centerID, const LHCb::CaloDigits * digits_full) const;
 
-  double inputData(std::string data) override { //@TODO: const-ify
-    // try ecal data
-    auto it = m_data.find(data);
-    if( it != m_data.end() )return it->second;
-    // else try prs data :
-    auto itp = m_prsdata.find(data);
-    if( itp != m_prsdata.end() )return itp->second;
-    // yapa
+  double inputData(std::string) override { //@TODO: const-ify
+    /* // try ecal data */
+    /* auto it = m_data.find(data); */
+    /* if( it != m_data.end() )return it->second; */
+    /* // else try prs data : */
+    /* auto itp = m_prsdata.find(data); */
+    /* if( itp != m_prsdata.end() )return itp->second; */
+    /* // yapa */
     return 0.;
   }
-  std::map<std::string,double> inputDataMap() override {return m_data;}
-  std::map<std::string,double> inputPrsDataMap() override {return m_prsdata;}
-  bool ClusterVariables(const LHCb::CaloHypo* hypo, double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
-  double& Eseed, double& E2, int& area);
-  bool PrsVariables(const LHCb::CaloHypo* hypo, double& r2PS, double& asymPS, double& kappaPS, double& r2r4PS,                                           double& eSumPS, double& ePrs, double& eMaxPS, double& e2ndPS, double& ecornerPS, 
-    int& multiPS, int& multiPS15, int& multiPS30, int& multiPS45){return true;};
-  double isPhoton(const double* v){return 0.0;};
+  
+  std::map<std::string,double> inputDataMap() override {return std::map<std::string,double>();}
+  std::map<std::string,double> inputPrsDataMap() override {return std::map<std::string,double>();}
+  bool ClusterVariables(const LHCb::CaloHypo*, double&, double&, double&, double&, double&, 
+			double&, double&, int&) override {return true;} 
+  bool PrsVariables(const LHCb::CaloHypo*, double&, double&, double&, double&,
+		    double&, double&, double&, double&, double&, 
+		    int&, int&, int&, int&) override {return true;}
+  double isPhoton(const double*) override {return 0.0;};
 
 
 private:
@@ -138,8 +140,6 @@ private:
 
   double XGBDiscriminant(int area, bool isBorder, std::vector<double>& row_energies);
 
-  std::map<std::string,double> m_data;
-  std::map<std::string,double> m_prsdata;
-  double m_def = -1.e+06;
+  const double m_def = -1.e+06;
 };
 #endif // GammaPi0XGBoostTool_H

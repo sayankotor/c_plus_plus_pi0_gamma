@@ -16,7 +16,7 @@
  *  @date   2009-07-29
  */
 
-DECLARE_TOOL_FACTORY( L0Calo2CaloTool )
+DECLARE_COMPONENT( L0Calo2CaloTool )
   
 /// Standard constructor
 L0Calo2CaloTool::L0Calo2CaloTool(const std::string& type,
@@ -25,22 +25,6 @@ L0Calo2CaloTool::L0Calo2CaloTool(const std::string& type,
    : base_class ( type, name , parent )
 {
   declareInterface<IL0Calo2Calo>(this);
-
-  declareProperty("CaloClusterizationTool", m_clusterizationToolName = "CaloClusterizationTool");
-  declareProperty("CaloDataProviderTool",   m_dataProviderToolName   = "CaloDataProvider");
-  declareProperty("CaloDigitLocation",      m_digitLocation          = LHCb::CaloDigitLocation::Hlt1Ecal);
-  declareProperty("CaloClusterLocation",    m_clusterLocation        = LHCb::CaloClusterLocation::EcalHlt1);  
-  declareProperty("NeighbourLevel",         m_neighbourLevel         = 2,
-                  "Level parameter for the CaloClusterizationTool, search clusters in (1+2*Level)x(1+2*Level) region around the seed cell");
-  declareProperty("Sort",                   m_sort                   = false,
-                  "sort the clusters due to energy");
-  declareProperty("SortET",                 m_sortET                 = false,
-                  "if Sort: sort the clusters due to transverse energy");
-  declareProperty("DecodeFullEcal",         m_decodeFullEcal         = false,
-                  "false = decode only the Tell1s around the L0CaloCandidate cellID");
-
-  declareProperty("ClusterOnTES",m_clusOnTES=false);
-
   m_ecalCaloNum = CaloCellCode::CaloNumFromName("Ecal");
 }
 // ==========================================================================

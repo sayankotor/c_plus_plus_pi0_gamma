@@ -36,8 +36,6 @@ public:
                           const std::string& name,
                           const IInterface* parent);
 
-  virtual ~NeutralIDTool( ); ///< Destructor
-
   StatusCode initialize() override;
   StatusCode finalize() override;
 
@@ -56,14 +54,12 @@ public:
     return photonDiscriminantH(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]);
   }
 
-protected:
-
 private:
 
-  double m_minPt;
+  Gaudi::Property<float> m_minPt {this, "MinPt", 75.};
 
-  std::auto_ptr<IClassifierReader> m_reader0;
-  std::auto_ptr<IClassifierReader> m_reader1;
+  std::unique_ptr<IClassifierReader> m_reader0;
+  std::unique_ptr<IClassifierReader> m_reader1;
 
 
 
@@ -77,7 +73,7 @@ private:
                               double prse49, double sprd, double prse4mx, double prsm, double spdm);
 
 
-  ICaloHypoEstimator* m_estimator;
+  ICaloHypoEstimator* m_estimator = nullptr;
 
 };
 #endif // NEUTRALIDTOOL_H

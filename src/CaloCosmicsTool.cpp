@@ -16,7 +16,7 @@
 //-----------------------------------------------------------------------------
 
 // Declaration of the Tool Factory
-DECLARE_TOOL_FACTORY( CaloCosmicsTool )
+DECLARE_COMPONENT( CaloCosmicsTool )
 
 
 //=============================================================================
@@ -29,63 +29,6 @@ CaloCosmicsTool::CaloCosmicsTool( const std::string& type,
 {
   declareInterface<ICaloCosmicsTool>(this);
 
-  declareProperty( "Detector"           , m_det);     // Detector name
-  declareProperty( "ReadoutTool"        , m_readoutTool  = "CaloDataProvider" ); // Name of calo bank decoding tool
-  declareProperty( "TrajectorySlots"    , m_seq);     // Vector of time-slots to be used for trajectory 
-  declareProperty( "AsymmetrySlots"     , m_asy);     // Pair of time-slots to be used for asymmetry 
-  declareProperty( "RemoveSlotForKernel", m_kern);     // Vector of time-slots to be used for trajectory 
-
-  // Cosmics track reconstruction
-  declareProperty( "ZeroSuppression"    , m_zSup=0);     // Zero suppression threshold for hits ADC (sum over BX)
-  declareProperty( "MaxSuppression"     , m_zInf=99999); // Remove largest ADC
-  declareProperty( "MinCosmicsDeposit"  , m_minD=0);     // minimal ADC sum over hits in cosmics track
-  declareProperty( "MaxCosmicsDeposit"  , m_maxD=99999); // maximal ADC sum over hits in cosmics track
-  declareProperty( "MinCosmicsMult"     , m_minM=0);      // minimal multiplicity of hits in cosmics track 
-  declareProperty( "MaxCosmicsMult"     , m_maxM=6156);   // minimal multiplicity of hits in cosmics track 
-  declareProperty( "MaxDistance2Line"   , m_tol=2.0);       // maximal distance between hit and cosmics track (cellSize unit)
-  // Timing
-  declareProperty( "MinR"               , m_minR= 0. );    // minimal asymmetry range to compute time (absolute value)
-  declareProperty( "MaxR"               , m_maxR= 0.8);    // maximal asymmetry range to compute time (absolute value)
-  declareProperty( "RtoTime"            , m_par);          // parameters to convert R to time 
-  declareProperty( "TRes"               , m_tRes=0);        // time resolution parameter
-  // Tupling setup
-  declareProperty( "Ntupling"           , m_tuple=false);    // produce ntuple
-  declareProperty( "MaxArraySize"       , m_maxAdc=500);     // ntuple max array (# cosmics ADCs)
-  declareProperty( "AllDigits"          , m_full=false);     // fill digit vector with all 0-sup ADC
-
-
-  // default sequence
-  m_seq.push_back("Prev1"); 
-  m_seq.push_back("T0"); 
-  m_seq.push_back("Next1");
-
-  m_kern.push_back("T0");
-  
-
-
-  // default asymmetry (first-second)/(first+second)
-  std::vector<std::string> prevT0;
-  prevT0.push_back("Prev1"); 
-  prevT0.push_back("T0");
-  m_asy["-25."] =  prevT0;
-
-
-  std::vector<std::string> t0Next;
-  t0Next.push_back("T0"); 
-  t0Next.push_back("Next1");
-  m_asy["0."]=t0Next;
-
-
-  //  std::vector<std::string> nextNext;
-  //  nextNext.push_back("Next1");
-  //  nextNext.push_back("Next2"); 
-  //  m_asy["25."]=nextNext;
-
-  //  std::vector<std::string> prevNext;
-  //  prevNext.push_back("Prev1"); 
-  //  prevNext.push_back("Next1");
-  //  m_asy["9999"]=prevNext;
-
   // set default detectorName
   int index = name.find_last_of(".") +1 ; // return 0 if '.' not found --> OK !!
   m_det = name.substr( index, 4 ); 
@@ -96,13 +39,8 @@ CaloCosmicsTool::CaloCosmicsTool( const std::string& type,
   if(m_det == "Ecal"){ m_zSup = 100;}
   else if(m_det == "Hcal"){ m_zSup = 10;  }
   else { m_zSup = 0;  }
-
-  // Jacques's fit parameter for T=f(R) 
-  m_par.push_back(+1.4);
-  m_par.push_back(-0.7);
-  m_par.push_back(+25.0);
-  m_par.push_back(+0.19);
 }
+
 //=============================================================================
 StatusCode CaloCosmicsTool::initialize(){
   StatusCode sc = base_class::initialize();

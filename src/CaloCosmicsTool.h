@@ -70,41 +70,61 @@ private:
   std::map<std::string,double> m_td;
 
 
-  double m_time;  // m_Rmean converted to time
-  double m_stime;
-  Gaudi::XYZPoint  m_refPoint;    // reference point on the cosmics 2D track
-  Gaudi::XYZPoint  m_eRefPoint;   // error on reference point
+  double m_time = -999;  // m_Rmean converted to time
+  double m_stime = -999;
+  Gaudi::XYZPoint m_refPoint;    // reference point on the cosmics 2D track
+  Gaudi::XYZPoint m_eRefPoint;   // error on reference point
   std::pair<Gaudi::XYZPoint,Gaudi::XYZPoint> m_bound; // extrema of the 2D track segment
-  double m_phi;
-  double m_sPhi;
-  bool m_timed;
-  bool m_tracked;
+  double m_phi = -999;
+  double m_sPhi = 999;
+  bool m_timed = false;
+  bool m_tracked = false;
   long m_adcSum;
   std::vector<std::string> m_slots;        // full list of requested time slots
   std::string m_maxLoc;
-  double m_offset;
+  double m_offset = -99999;
+  double m_kernel = -1.;
 
   // properties
-  std::string m_det;                                // detector name
-  std::string m_readoutTool;                       // Name of the readout tool
-  std::vector<std::string> m_seq;                  // sequence of time-slots to be used for trajectory computation
-  std::vector<std::string> m_kern;                  // sequence of time-slots to be removed from kernel
-  std::map<std::string, std::vector<std::string> > m_asy;    // pairs of time-slots to be used for asymmetry computation
+  Gaudi::Property<std::string> m_det {this, "Detector"};
+  
+  Gaudi::Property<std::string> m_readoutTool 
+    {this, "ReadoutTool", "CaloDataProvider", "Name of the readout tool"};
+  
+  Gaudi::Property<std::vector<std::string>> m_seq
+    {this, "TrajectorySlots", {"Prev1", "T0", "Next1"},
+    "sequence of time-slots to be used for trajectory computation"};
+
+  Gaudi::Property<std::vector<std::string>> m_kern
+    {this, "RemoveSlotForKernel", {"T0"}, 
+    "sequence of time-slots to be removed from kernel"};
+
+  Gaudi::Property<std::map<std::string, std::vector<std::string> >> m_asy
+    {this, "AsymmetrySlots",
+    { 
+      {"-25.", {"Prev1", "T0"}}, 
+      {"0.", {"T0", "Next1"}} 
+    }, 
+    "pairs of time-slots to be used for asymmetry computation"};
+
   //
-  long m_zSup   ;
-  long m_zInf   ;
-  long m_minD   ;
-  long m_maxD   ;
-  long m_minM   ;
-  long m_maxM   ;
-  double m_tol  ;
-  double m_minR ;
-  double m_maxR ;
-  std::vector<double> m_par;
-  double m_tRes;
-  bool m_tuple;
-  int m_maxAdc;
-  bool m_full;
-  double m_kernel;
+  Gaudi::Property<long> m_zSup    {this, "ZeroSuppression", 0, "Zero suppression threshold for hits ADC (sum over BX)"};
+  Gaudi::Property<long> m_zInf    {this, "MaxSuppression", 99999, "Remove largest ADC"};
+  Gaudi::Property<long> m_minD    {this, "MinCosmicsDeposit", 0, "minimal ADC sum over hits in cosmics track"};
+  Gaudi::Property<long> m_maxD    {this, "MaxCosmicsDeposit", 99999, "maximal ADC sum over hits in cosmics track"};
+  Gaudi::Property<long> m_minM    {this, "MinCosmicsMult", 0, "minimal multiplicity of hits in cosmics track"};
+  Gaudi::Property<long> m_maxM    {this, "MaxCosmicsMult", 6156, "minimal multiplicity of hits in cosmics track"};
+  Gaudi::Property<float> m_tol   {this, "MaxDistance2Line", 2.0, "maximal distance between hit and cosmics track (cellSize unit)"};
+
+  // Timing
+  Gaudi::Property<float> m_minR  {this, "MinR", 0., "minimal asymmetry range to compute time (absolute value)"};
+  Gaudi::Property<float> m_maxR  {this, "MaxR", 0.8, "maximal asymmetry range to compute time (absolute value)"};
+  Gaudi::Property<std::vector<float>> m_par {this, "RtoTime", {1.4, -0.7, 25.0, 0.19}, "parameters to convert R to time "};
+  Gaudi::Property<float> m_tRes {this, "TRes", 0, "time resolution parameter"};
+
+  // Tupling setup
+  Gaudi::Property<bool> m_tuple  {this, "Ntupling"    , false, "produce ntuple"};
+  Gaudi::Property<int>  m_maxAdc {this, "MaxArraySize", 500, "ntuple max array (# cosmics ADCs)"};
+  Gaudi::Property<bool> m_full   {this, "AllDigits"   , false, "fill digit vector with all 0-sup ADC"};
 };
 #endif // CALOCOSMICSTOOL_H

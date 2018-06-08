@@ -64,7 +64,7 @@ public:
     //
     if ( m_digiLoc.end() == std::find ( m_digiLoc.begin() ,
                                         m_digiLoc.end  () , loc ) )
-    { m_digiLoc.push_back( loc ) ; }
+    { m_digiLoc.value().push_back( loc ) ; }
     //
     if ( m_digits.end() == m_digits.find( loc ) )
     { m_digits[loc] = 0 ; }
@@ -80,7 +80,7 @@ public:
     //
     if ( m_clusLoc.end() == std::find ( m_clusLoc.begin () ,
                                         m_clusLoc.end   () ,  loc ) )
-    { m_clusLoc.push_back( loc ) ; }
+    { m_clusLoc.value().push_back( loc ) ; }
     //
     if ( m_clusters.end() == m_clusters.find( loc ) )
     { m_clusters[loc] = 0 ; }
@@ -96,7 +96,7 @@ public:
     //
     if ( m_hypoLoc.end() == std::find ( m_hypoLoc.begin () ,
                                         m_hypoLoc.end   () , loc ) )
-    { m_hypoLoc.push_back( loc ) ; }
+    { m_hypoLoc.value().push_back( loc ) ; }
     //
     if ( m_hypos.end() == m_hypos.find( loc ) )
     { m_hypos[loc] = 0 ; }
@@ -130,21 +130,21 @@ protected:
   void nullify() ;
   // =========================================================================
 private:
-  ICounterLevel* counterStat;
+  ICounterLevel* counterStat = nullptr;
   // =========================================================================
   std::map<std::string,LHCb::CaloDigits*>   m_digits;
   std::map<std::string,LHCb::CaloClusters*> m_clusters;
   std::map<std::string,LHCb::CaloHypos*>    m_hypos;
   std::map<std::string,ICaloDataProvider*>  m_provider;
   std::map<std::string,bool> m_prov;
-  bool m_digiUpd;
-  bool m_clusUpd;
-  bool m_hypoUpd;
+  Gaudi::Property<bool> m_digiUpd {this, "GetDigits", true};
+  Gaudi::Property<bool> m_clusUpd {this, "GetClusters", false};
+  Gaudi::Property<bool> m_hypoUpd {this, "GetHypos", false};
   //  bool m_provUpd;
-  std::vector<std::string> m_digiLoc;
-  std::vector<std::string> m_clusLoc;
-  std::vector<std::string> m_hypoLoc;
-  int m_detMask;
+  Gaudi::Property<std::vector<std::string>> m_digiLoc {this, "DigitLocations"};
+  Gaudi::Property<std::vector<std::string>> m_clusLoc {this, "ClusterLocations"};
+  Gaudi::Property<std::vector<std::string>> m_hypoLoc {this, "HypoLocations"};
+  Gaudi::Property<int> m_detMask {this, "DetectorMask", 0xF};
 };
 // ============================================================================
 // The END

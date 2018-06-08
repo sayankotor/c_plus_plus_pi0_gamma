@@ -19,7 +19,7 @@
  */
 // ============================================================================
 // Declaration of the Tool Factory
-DECLARE_TOOL_FACTORY( Calo2Calo )
+DECLARE_COMPONENT( Calo2Calo )
 // ============================================================================
 
 
@@ -30,19 +30,8 @@ Calo2Calo::Calo2Calo( const std::string& type,
                       const std::string& name,
                       const IInterface* parent )
   : base_class ( type, name , parent )
-  , m_fromCalo("??")
-  , m_toCalo("??")
-  , m_count(0)
-  , m_fromSize(0.)
-  , m_toSize(0.)
-  , m_ok(true)
 {
   declareInterface<ICalo2Calo>(this);
-  declareProperty("IdealGeometry", m_geo = true );
-  declareProperty("FromCalo"     , m_fromCalo);
-  declareProperty("ToCalo"       , m_toCalo );
-  declareProperty("GetterName"   , m_getterName = "CaloGetter" );
-
 }
 //=============================================================================
 StatusCode Calo2Calo::initialize()
@@ -192,7 +181,7 @@ Calo2Calo::cellIDs ( const LHCb::CaloCellID& fromId ,
   // ---- Assume ideal geometry : trivial mapping for detectors having the same granularity (Prs/Spd/Ecal)
   if( ( m_geo && (m_fromCalo == "Ecal" || m_fromCalo == "Prs" || m_fromCalo == "Spd") 
         && (m_toCalo == "Ecal" || m_toCalo == "Prs" || m_toCalo == "Spd") ) 
-      || m_fromCalo == m_toCalo ){
+      || m_fromCalo.value() == m_toCalo.value() ){
     toId.setCalo( CaloCellCode::CaloNumFromName( m_toCalo ));
     if( UNLIKELY( msgLevel(MSG::DEBUG) ) ) 
       debug() << "Add cell from trivial mapping" << endmsg;
@@ -202,7 +191,7 @@ Calo2Calo::cellIDs ( const LHCb::CaloCellID& fromId ,
   // ---- Else use the actual geometry to connet detectors
   double scale = 1.;
   Gaudi::XYZPoint  center = m_fromDet->cellCenter( fromId );
-  if( m_fromCalo != m_toCalo ){
+  if( m_fromCalo.value() != m_toCalo.value() ){
     // z-scaling
     scale = m_toSize / m_fromSize ;
     center  = m_toPlane.ProjectOntoPlane( m_fromDet->cellCenter( fromId )*scale );

@@ -1,6 +1,6 @@
 // $Id: Track2Calo.h,v 1.1.1.1 2008-05-08 09:09:02 cattanem Exp $
 #ifndef TRACK2CALO_H
-#define TRACK2CALO_H 1
+#define TRACK2CALO_H
 
 // Include files
 // from Gaudi

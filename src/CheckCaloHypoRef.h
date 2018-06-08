@@ -20,7 +20,7 @@ public:
   StatusCode execute() override;    ///< Algorithm execution
 
 private:
-  std::vector<std::string> m_inputs;
-  ICounterLevel* counterStat;
+  Gaudi::Property<std::vector<std::string>> m_inputs {this, "CaloHypos"};
+  ICounterLevel* counterStat = nullptr;
 };
 #endif // CHECKCALOHYPOREF_H

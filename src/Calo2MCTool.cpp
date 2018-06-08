@@ -19,7 +19,7 @@
 //-----------------------------------------------------------------------------
 
 // Declaration of the Tool Factory
-DECLARE_TOOL_FACTORY( Calo2MCTool )
+DECLARE_COMPONENT( Calo2MCTool )
 
 //=============================================================================
 // Standard constructor, initializes variables
@@ -30,14 +30,6 @@ Calo2MCTool::Calo2MCTool( const std::string& type,
   : base_class ( type, name , parent )
 {
   declareInterface<ICalo2MCTool>(this);
-
-  declareProperty ( "Cluster2MCTable" , m_cluster2MCLoc ) ; // Cluster->MC relation table location
-  declareProperty ( "Digit2MCTable"   , m_digit2MCLoc = "Relations/" + LHCb::CaloDigitLocation::Default ) ;  // Digit->MC relation table location
-  declareProperty ( "Hypo2Cluster"    , m_hypo2Cluster  = false   ); // (part->protoP)->hypo->cluster cascade ( or use  hypo->MC linker tables)
-  declareProperty ( "Cluster2Digits"  , m_cluster2Digit = false  );  // (part->protoP)->hypo->cluster->digit cascade ( or use cluster->MC relation tables)
-  declareProperty ( "Merged2Split"    , m_merged2Split  = false  );  // expert usage (merged->split->cluster - NOT IMPLEMENTED so far)
-  declareProperty ( "DigitStatusFilter"  , m_sFilter    = LHCb::CaloDigitStatus::UseForEnergy       ) ; // digit filter in case of ..->digit->MC table is used
-
   m_cluster2MCLoc = "Relations/" + ( boost::iequals( context(), "HLT")
                                      ? LHCb::CaloClusterLocation::DefaultHlt
                                      : LHCb::CaloClusterLocation::Default );
@@ -74,10 +66,10 @@ StatusCode Calo2MCTool::initialize(){
   //@TODO: dynamic_cast to IProperty... remove IProperty from ICalo2MCTool...
   m_tool->setProperty ( "Cluster2MCTable" , m_cluster2MCLoc ) ;
   m_tool->setProperty ( "Digit2MCTable"   , m_digit2MCLoc   ) ;
-  m_tool->setProperty ( "Cluster2Digits"  , Gaudi::Utils::toString( m_cluster2Digit ) );
-  m_tool->setProperty ( "Hypo2Cluster"    , Gaudi::Utils::toString( m_hypo2Cluster  ) );
-  m_tool->setProperty ( "Merged2Split"    , Gaudi::Utils::toString( m_merged2Split  ) );
-  m_tool->setProperty ( "DigitStatusFilter"  , Gaudi::Utils::toString( m_sFilter    ) ) ;
+  m_tool->setProperty ( "Cluster2Digits"  , Gaudi::Utils::toString( m_cluster2Digit.value() ) );
+  m_tool->setProperty ( "Hypo2Cluster"    , Gaudi::Utils::toString( m_hypo2Cluster.value()  ) );
+  m_tool->setProperty ( "Merged2Split"    , Gaudi::Utils::toString( m_merged2Split.value()  ) );
+  m_tool->setProperty ( "DigitStatusFilter"  , Gaudi::Utils::toString( m_sFilter.value()    ) );
 
   m_sum = 0.;
   m_maxMC  = nullptr ;
@@ -89,9 +81,6 @@ StatusCode Calo2MCTool::initialize(){
     Warning(" ... CaloCluster  will be re-processed (require full DST)", StatusCode::SUCCESS).ignore();
     Warning(" ... assume an identical reconstruction version  ", StatusCode::SUCCESS).ignore();
   }
-
-
-
   //
   clear();
   return StatusCode::SUCCESS;
@@ -169,8 +158,8 @@ void Calo2MCTool::addProto(const LHCb::ProtoParticle* proto, const LHCb::Particl
   } else {
     bool brem = ( parent && ( std::abs(parent->momentum().P() - proto->track()->firstState().p())> 1E-4 ) );/* bremstrahlung corrected particle */
     for( const auto& hypo : hypos ) {
-       if ( hypo->hypothesis() == LHCb::CaloHypo::EmCharged  ||
-          ( brem && hypo->hypothesis() == LHCb::CaloHypo::Photon ) ) addHypo(hypo);
+       if ( hypo->hypothesis() == LHCb::CaloHypo::Hypothesis::EmCharged  ||
+          ( brem && hypo->hypothesis() == LHCb::CaloHypo::Hypothesis::Photon ) ) addHypo(hypo);
     }
   }
 }
@@ -224,7 +213,10 @@ void Calo2MCTool::addHypo(const LHCb::CaloHypo* hypo){
       for ( const LHCb::MCParticle* particle = linker.first( hypo ) ; particle; particle = linker.next() ) {
         m_mcMap[particle] += linker.weight();
       }
-      m_sum += hypo->e();
+      if( hypo->hypothesis() == LHCb::CaloHypo::Hypothesis::Pi0Merged )
+        m_sum+=LHCb::CaloMomentum(hypo).e();
+      else
+        m_sum += hypo->e();
       if(counterStat->isQuiet())counter("CaloHypo->MC matching") += 1;
     }
   }
@@ -235,11 +227,11 @@ void Calo2MCTool::addHypo(const LHCb::CaloHypo* hypo){
     const SmartRefVector<LHCb::CaloCluster> clusters = hypo->clusters();
     if( clusters.empty() )return;
     const LHCb::CaloCluster* cluster =
-      ( clusters.size() > 1 && hypo->hypothesis() == LHCb::CaloHypo::PhotonFromMergedPi0 ) ?
+      ( clusters.size() > 1 && hypo->hypothesis() == LHCb::CaloHypo::Hypothesis::PhotonFromMergedPi0 ) ?
       *(clusters.begin() + 1 ) : *(clusters.begin()); //@ToDO use cluster::Type (when defined)
     if( !cluster )return ;
     if( counterStat->isQuiet() &&
-        clusters.size() !=1 && hypo->hypothesis() != LHCb::CaloHypo::PhotonFromMergedPi0 )counter("ill-defined CaloHypo") += 1;
+        clusters.size() !=1 && hypo->hypothesis() != LHCb::CaloHypo::Hypothesis::PhotonFromMergedPi0 )counter("ill-defined CaloHypo") += 1;
     addCluster( cluster );
   }
   return;
@@ -252,7 +244,7 @@ ICalo2MCTool* Calo2MCTool::from(const LHCb::CaloHypo*   hypo  ){
   if( !hypo )return this;
   m_hypo = const_cast<LHCb::CaloHypo*>(hypo);
   // special case for MergedPi0
-  if( hypo->hypothesis() == LHCb::CaloHypo::Pi0Merged && m_merged2Split){
+  if(  hypo->hypothesis() == LHCb::CaloHypo::Hypothesis::Pi0Merged&& m_merged2Split){
     const auto& hyps = hypo->hypos();
     if( hyps.empty() )return this;
     addHypo( hyps.front() ); // splitPhoton1

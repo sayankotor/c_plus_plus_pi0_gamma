@@ -19,7 +19,7 @@
 //-----------------------------------------------------------------------------
 
 // Declaration of the Tool Factory
-DECLARE_TOOL_FACTORY( CaloHypo2Calo )
+DECLARE_COMPONENT( CaloHypo2Calo )
 
 
 //=============================================================================
@@ -31,16 +31,6 @@ CaloHypo2Calo::CaloHypo2Calo( const std::string& type,
   : Calo2Calo ( type, name , parent )
 {
   declareInterface<ICaloHypo2Calo>(this);
-
-
-  declareProperty("Seed"         , m_seed   = true );
-  declareProperty("PhotonLine"   , m_line   = true );
-  declareProperty("AddNeighbors" , m_neighb = true );
-  declareProperty("xTolerance"   , m_x      =  5.*Gaudi::Units::mm);
-  declareProperty("yTolerance"   , m_y      =  5.*Gaudi::Units::mm);
-  declareProperty("StatusMask"   , m_status = 0x0  );
-  declareProperty("WholeCluster" , m_whole  = false);
-
 }
 
 //=============================================================================

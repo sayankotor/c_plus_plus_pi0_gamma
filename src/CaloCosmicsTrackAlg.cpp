@@ -1,4 +1,4 @@
-// Include files 
+// Include files
 
 // from LHCb
 #include "GaudiKernel/Vector3DTypes.h"
@@ -18,24 +18,7 @@
 //-----------------------------------------------------------------------------
 
 // Declaration of the Algorithm Factory
-DECLARE_ALGORITHM_FACTORY( CaloCosmicsTrackAlg )
-
-
-//=============================================================================
-// Standard constructor, initializes variables
-//=============================================================================
-CaloCosmicsTrackAlg::CaloCosmicsTrackAlg( const std::string& name,
-                                    ISvcLocator* pSvcLocator)
-  : GaudiTupleAlg ( name , pSvcLocator )
-  , m_caloTrack(NULL)
-{
-
-  declareProperty("TrackTool" , m_trackToolType = "CaloCosmicsTrackTool");
-  declareProperty("ForwardTrackContainer"   , m_forward=LHCb::TrackLocation::CaloCosmicsForward);
-  declareProperty("BackwardTrackContainer"  , m_backward=LHCb::TrackLocation::CaloCosmicsBackward);
-  declareProperty("Monitor"   , m_monitor=false);
-
-}
+DECLARE_COMPONENT( CaloCosmicsTrackAlg )
 
 //=============================================================================
 // Initialization
@@ -78,8 +61,8 @@ StatusCode CaloCosmicsTrackAlg::execute() {
     fill( histo1D(HistoID("Rec/Forward/1"))  ,  0. , 1.); // bin0 = counter
     fill( histo1D(HistoID("Rec/Backward/1"))  ,  0. , 1.); // bin0 = counter
   }
-  
-  
+
+
   // create and store container
   LHCb::Tracks* forwards = new LHCb::Tracks();
   LHCb::Tracks* backwards = new LHCb::Tracks();
@@ -89,27 +72,27 @@ StatusCode CaloCosmicsTrackAlg::execute() {
   // process tracking
   StatusCode esc = m_caloTrack->processing();
   if(!m_caloTrack->tracked()){
-    if( UNLIKELY( msgLevel(MSG::DEBUG) ) ) 
+    if( UNLIKELY( msgLevel(MSG::DEBUG) ) )
       debug() << "No track reconstructed" << endmsg;
     return StatusCode::SUCCESS;
   }
-  
-      
+
+
   //store tracks
   LHCb::Track* track = new LHCb::Track();
   track->copy( m_caloTrack->track() );
   ( m_caloTrack->forward() ) ?  forwards->insert( track ) : backwards->insert( track );
 
-  
+
   // Checks
   if( UNLIKELY( msgLevel(MSG::DEBUG) ) ) {
     debug() << " Track ---- " << endmsg;
-    debug() << " backward  : "<< track->checkFlag(LHCb::Track::Backward) << endmsg;
-    debug() << " Timed : " << track->checkFlag(LHCb::Track::Selected) << " / " << m_caloTrack->timed() << endmsg;
+    debug() << " backward  : "<< track->checkFlag(LHCb::Track::Flags::Backward) << endmsg;
+    debug() << " Timed : " << track->checkFlag(LHCb::Track::Flags::Selected) << " / " << m_caloTrack->timed() << endmsg;
     debug() << " firstState : "<< track->firstState() << endmsg;
     // commented out by VB. 8.8.2k+9
     // debug() << " Time : " << track->likelihood()<< endmsg;
-    debug() << " Chi2 : " << track->info(LHCb::Track::FitMatchChi2, 999.)<< endmsg; 
+    debug() << " Chi2 : " << track->info(LHCb::Track::AdditionalInfo::FitMatchChi2, 999.)<< endmsg;
     double z = 8000;
     m_caloTrack->propagate( z );
     debug() << "Propagated track ---" << endmsg;
@@ -117,13 +100,13 @@ StatusCode CaloCosmicsTrackAlg::execute() {
     debug() << "Position Error : " << sqrt(m_caloTrack->referencePointCovariance()) << endmsg;
     debug() << "Time : " << m_caloTrack->time() << endmsg;
   }
-  
 
-    
+
+
   // Monitoring
   std::stringstream dir("");
   dir << ( m_caloTrack->forward()  ?  "Forward/" : "Backward/" );
-  if(m_monitor && m_caloTrack->tracked()){    
+  if(m_monitor && m_caloTrack->tracked()){
     fill( histo1D(HistoID("Rec/"+dir.str()+"1"))  ,  1. , 1.); // bin1 = reconstructed
     fill( histo1D(HistoID("Rec/1"))  ,  1. , 1.); // bin1 = reconstructed
     fill( histo1D(HistoID("Asymmetry/1")), m_caloTrack->ecal()->asymmetry(), 1.);
@@ -138,7 +121,7 @@ StatusCode CaloCosmicsTrackAlg::execute() {
       phi   += acos(-1.);
       if( phi > acos(-1.)) phi -= 2*acos(-1.); // phi in [-pi,pi]
       theta = acos(-1.) - theta; // theta in [0,pi]
-    }    
+    }
     fill( histo2D(HistoID("Rec/3")), phi, theta, 1.);
   }
   if(m_monitor && m_caloTrack->timed()){
@@ -151,10 +134,10 @@ StatusCode CaloCosmicsTrackAlg::execute() {
     fill( histo1D(HistoID("Rec/1"))  ,  3. , 1.); // bin2 = ecal+hcal timing
     fill( histo2D(HistoID("Rec/2"))  , m_caloTrack->ecal()->slot()+12.5, m_caloTrack->hcal()->slot()+12.5, 1. );
   }
-  
+
 
 
   if( m_caloTrack->tracked())setFilterPassed(true);
- 
+
   return StatusCode::SUCCESS;
 }

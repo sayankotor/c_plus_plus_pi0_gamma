@@ -1,5 +1,5 @@
 #ifndef GAMMAPI0SEPARATIONTOOL_H
-#define GAMMAPI0SEPARATIONTOOL_H 1
+#define GAMMAPI0SEPARATIONTOOL_H
 
 // Include files
 // from Gaudi

@@ -67,30 +67,24 @@ protected:
   std::map<std::string,double>m_refSize;
   std::map<std::string,Gaudi::Plane3D> m_plane;
   //
-  std::string m_fromCalo;
-  std::string m_toCalo;
+  Gaudi::Property<std::string> m_fromCalo {this, "FromCalo", "??"};
+  Gaudi::Property<std::string> m_toCalo {this, "ToCalo", "??"};
   std::vector<LHCb::CaloCellID> m_cells;
   std::vector<LHCb::CaloDigit*>  m_digits;
-  double m_energy;
-  int m_count;
-  DeCalorimeter* m_fromDet;
-  DeCalorimeter* m_toDet;
-  double m_fromSize;
-  double m_toSize;
+  double m_energy = 0.;
+  int m_count = 0;
+  DeCalorimeter* m_fromDet = nullptr;
+  DeCalorimeter* m_toDet = nullptr;
+  double m_fromSize = 0.;
+  double m_toSize = 0.;
   std::string m_toLoc;
   Gaudi::Plane3D m_toPlane;
-  LHCb::CaloDigits* m_digs;
-  ICaloGetterTool* m_getter;
+  LHCb::CaloDigits* m_digs = nullptr;
+  ICaloGetterTool* m_getter = nullptr;
+  bool m_ok = true;
 private:
-  bool m_geo;
-  std::string m_getterName;
-protected :
-  bool m_ok;
+  Gaudi::Property<bool> m_geo {this, "IdealGeometry", true};
+  Gaudi::Property<std::string> m_getterName {this, "GetterName", "CaloGetter"};
 
 };
 #endif // CALO2CALO_H
-
-
-
-
-

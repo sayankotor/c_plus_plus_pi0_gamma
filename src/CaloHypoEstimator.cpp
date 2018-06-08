@@ -23,28 +23,9 @@ CaloHypoEstimator::CaloHypoEstimator( const std::string& type,
                                       const std::string& name,
                                       const IInterface* parent )
   : GaudiTool ( type, name , parent )
-  , m_toCalo(NULL)
-  , m_hypo(NULL)
-  , m_cluster(NULL)
-  , m_status(true)
-  , m_electron(NULL)
-  , m_GammaPi0(NULL)
-  , m_neutralID(NULL)
-  , m_tables(NULL)
 {
   declareInterface<ICaloHypoEstimator>(this);
 
-
-  declareProperty("Extrapolation", m_extrapol = true);  
-  declareProperty("AddSeed"      , m_seed = false);  
-  declareProperty("AddNeighbors" , m_neig = false);  
-  declareProperty( "ClusterMatchLocation"   , m_cmLoc );
-  declareProperty( "ElectronMatchLocation"  , m_emLoc );
-  declareProperty( "BremMatchLocation"      , m_bmLoc );
-  declareProperty( "NeutralIDLocations"     , m_pidLoc ) ;
-  declareProperty( "SkipNeutralID"          , m_skipN=false);
-  declareProperty( "SkipChargedID"          , m_skipC=false);
-  declareProperty( "SkipClusterMatch"       , m_skipCl=false);
   m_cmLoc= LHCb::CaloAlgUtils::CaloIdLocation("ClusterMatch", context());
   m_emLoc= LHCb::CaloAlgUtils::CaloIdLocation("ElectronMatch", context());
   m_bmLoc= LHCb::CaloAlgUtils::CaloIdLocation("BremMatch", context());
@@ -75,7 +56,8 @@ StatusCode CaloHypoEstimator::initialize() {
   hypo2Calo()->_setProperty("AddNeighbors", neig).ignore();
 
   m_electron = tool<ICaloElectron>("CaloElectron","CaloElectron",this);
-  m_GammaPi0  = tool<IGammaPi0SeparationTool>("GammaPi0XGBoostTool" , "GammaPi0XGBoostTool", this);
+  m_GammaPi0  = tool<IGammaPi0SeparationTool>("GammaPi0SeparationTool" , "GammaPi0SeparationTool", this);
+  m_GammaPi0XGB = tool<IGammaPi0SeparationTool>("GammaPi0XGBoostTool" , "GammaPi0XGBoostTool", this);
   m_neutralID = tool<INeutralIDTool>("NeutralIDTool" , "NeutralIDTool", this);
 
   m_ecal = getDet<DeCalorimeter>( DeCalorimeterLocation::Ecal );
@@ -84,11 +66,6 @@ StatusCode CaloHypoEstimator::initialize() {
   m_status = true;
   return sc;
 }
-
-//=============================================================================
-// Destructor
-//=============================================================================
-CaloHypoEstimator::~CaloHypoEstimator() {} 
 
 //=============================================================================
 

@@ -18,6 +18,7 @@
 #include "Event/MCParticle.h"
 #include "Kernel/IParticlePropertySvc.h"
 #include "Kernel/ParticleProperty.h"
+#include "CaloUtils/CaloMomentum.h"
 // from LHCb : some  typedef and utilities
 #include "CaloUtils/Calo2MC.h"
 #include "CaloUtils/CaloMCTools.h"
@@ -94,7 +95,7 @@ public:
   // protos()
 
 private:
-  ICounterLevel* counterStat;
+  ICounterLevel* counterStat = nullptr;
   StatusCode process();
   void addDigit   (const LHCb::CaloDigit* digit);
   void addCluster (const LHCb::CaloCluster* cluster);
@@ -117,10 +118,14 @@ private:
   LHCb::Particle* m_part = nullptr;
   CaloMCTools::CaloMCMap m_mcMap;
   //
-  std::string m_cluster2MCLoc;
-  std::string m_digit2MCLoc;
+  Gaudi::Property<std::string> m_cluster2MCLoc 
+    {this, "Cluster2MCTable", "", "Cluster->MC relation table location"};
+
+  Gaudi::Property<std::string> m_digit2MCLoc 
+    {this, "Digit2MCTable", "Relations/" + LHCb::CaloDigitLocation::Default, 
+    "Digit->MC relation table location"};
+
   LHCb::Calo2MC::IClusterTable* m_cluster2MC  = nullptr;
-  //LHCb::Calo2MC::IHypoTable*    m_hypo2MC  = nullptr;
   LHCb::Calo2MC::IDigitTable*   m_digit2MC  = nullptr;
   double m_sum = 0.;
   const LHCb::MCParticle* m_maxMC = nullptr;
@@ -129,10 +134,19 @@ private:
   SmartIF<LHCb::IParticlePropertySvc> m_ppsvc;
 
   //
-  bool m_hypo2Cluster;
-  bool m_cluster2Digit;
-  bool m_merged2Split;
-  int m_sFilter;
+  Gaudi::Property<bool> m_hypo2Cluster 
+    {this, "Hypo2Cluster", false, "(part->protoP)->hypo->cluster cascade ( or use  hypo->MC linker tables)"};
+
+  Gaudi::Property<bool> m_cluster2Digit 
+    {this, "Cluster2Digits", false, "(part->protoP)->hypo->cluster->digit cascade ( or use cluster->MC relation tables)"};
+
+  Gaudi::Property<bool> m_merged2Split 
+    {this, "Merged2Split", false, "expert usage (merged->split->cluster - NOT IMPLEMENTED so far)"};
+
+  Gaudi::Property<int> m_sFilter 
+    {this, "DigitStatusFilter", LHCb::CaloDigitStatus::UseForEnergy,
+    "digit filter in case of ..->digit->MC table is used"};
+
   int m_category = 0;
   int m_depth = -1;
   unsigned int m_nFrag = 0;

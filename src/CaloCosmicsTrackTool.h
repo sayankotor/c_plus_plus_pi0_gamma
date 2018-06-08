@@ -52,9 +52,9 @@ private:
   StatusCode buildTrack();
 
   //
-  ICaloCosmicsTool* m_eCosmics;
-  ICaloCosmicsTool* m_hCosmics;
-  IEventTimeDecoder* m_odin;
+  ICaloCosmicsTool* m_eCosmics = nullptr;
+  ICaloCosmicsTool* m_hCosmics = nullptr;
+  IEventTimeDecoder* m_odin = nullptr;
   //
   long m_run;
   long m_evt;
@@ -70,8 +70,8 @@ private:
   double m_phi;
   double m_sPhi;
   double m_chi2;
-  bool m_intern;
-  bool m_extern;
+  Gaudi::Property<bool> m_intern {this, "UseInternalPlanes", false};
+  Gaudi::Property<bool> m_extern {this, "UseExternalPlanes", false};
   double m_time;
   double m_stime;
   Gaudi::XYZPoint m_refPoint[2];
@@ -85,11 +85,11 @@ private:
   bool m_timed;
   LHCb::Track m_track;
   // properties
-  std::string m_cosmics;
-  double m_chi2max;
-  double m_chi2min;
-  double m_fac;
-  double m_tuple;
-  std::string m_timer;
+  Gaudi::Property<std::string> m_cosmics {this, "CosmicsTool", "CaloCosmicsTool"};
+  Gaudi::Property<float> m_chi2max {this, "MaxChi2", 15};
+  Gaudi::Property<float> m_chi2min {this, "MinChi2", 0};
+  Gaudi::Property<float> m_fac {this, "Factor", 1.5};
+  Gaudi::Property<bool> m_tuple {this, "Ntupling", false, "produce ntuple"};
+  Gaudi::Property<std::string> m_timer {this, "Timer", "EcalElseHcal"};
 };
 #endif // CALOCOSMICSTRACKTOOL_H

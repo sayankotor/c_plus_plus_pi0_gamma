@@ -31,6 +31,7 @@
  *  @date   2010-08-18
  */
 
+
 class CaloHypoEstimator : public GaudiTool, virtual public ICaloHypoEstimator, virtual public IIncidentListener {
 public:
   /// Standard constructor
@@ -40,7 +41,6 @@ public:
 
   StatusCode initialize() override;
   StatusCode finalize() override;
-  virtual ~CaloHypoEstimator( ); ///< Destructor
 
   double data(const LHCb::CaloCluster* cluster ,CaloDataType::DataType type, double def = CaloDataType::Default) override;
   double data(const LHCb::CaloHypo* hypo ,CaloDataType::DataType type, double def = CaloDataType::Default) override;
@@ -67,35 +67,38 @@ public:
   bool status() override {return m_status;}
 
 
-protected:
-
 private:
-  ICounterLevel* counterStat;
+  ICounterLevel* counterStat = nullptr;
   bool estimator(const LHCb::CaloCluster* cluster,const LHCb::CaloHypo* fromHypo=NULL);
   bool estimator(const LHCb::CaloHypo* hypo);
   void clean();
-  ICaloHypo2Calo* m_toCalo;
-  bool m_extrapol;
-  bool m_seed;
-  bool m_neig;
+  
+  Gaudi::Property<bool> m_extrapol {this, "Extrapolation", true};
+  Gaudi::Property<bool> m_seed {this, "AddSeed", false};
+  Gaudi::Property<bool> m_neig {this, "AddNeighbors", false};
+  
+  ICaloHypo2Calo* m_toCalo = nullptr;
   caloDataType m_data;
   caloMatchType m_track;
   caloClusterType m_clusters;
-  LHCb::CaloHypo* m_hypo ;
-  LHCb::CaloCluster* m_cluster;
-  std::map<std::string,std::string> m_pidLoc;
-  std::string m_cmLoc;
-  std::string m_emLoc;
-  std::string m_bmLoc;
-  bool m_skipC;
-  bool m_skipN;
-  bool m_skipCl;
+  LHCb::CaloHypo* m_hypo = nullptr;
+  LHCb::CaloCluster* m_cluster = nullptr;
+  
+  Gaudi::Property<std::map<std::string,std::string>> m_pidLoc {this, "NeutralIDLocations"};
+  Gaudi::Property<std::string> m_cmLoc {this, "ClusterMatchLocation"};
+  Gaudi::Property<std::string> m_emLoc {this, "ElectronMatchLocation"};
+  Gaudi::Property<std::string> m_bmLoc {this, "BremMatchLocation"};
+  Gaudi::Property<bool> m_skipC {this, "SkipChargedID", false};
+  Gaudi::Property<bool> m_skipN {this, "SkipNeutralID", false};
+  Gaudi::Property<bool> m_skipCl {this, "SkipClusterMatch", false};
+
   std::map<std::string,LHCb::Calo2Track::IHypoEvalTable*> m_idTable;
-  bool m_status;
-  ICaloElectron * m_electron;
-  IGammaPi0SeparationTool* m_GammaPi0;
-  INeutralIDTool* m_neutralID;
-  ICaloRelationsGetter*    m_tables;
-  DeCalorimeter* m_ecal;
+  bool m_status = true;
+  ICaloElectron * m_electron = nullptr;
+  IGammaPi0SeparationTool* m_GammaPi0 = nullptr;
+  IGammaPi0SeparationTool* m_GammaPi0XGB = nullptr;
+  INeutralIDTool* m_neutralID = nullptr;
+  ICaloRelationsGetter*    m_tables = nullptr;
+  DeCalorimeter* m_ecal = nullptr;
 };
 #endif // CALOHYPOESTIMATOR_H

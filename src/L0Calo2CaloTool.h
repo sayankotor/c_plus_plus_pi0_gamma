@@ -230,21 +230,33 @@ protected:
     const unsigned int      level  ) const ;
   // ==========================================================================
 private:
-  std::string          m_clusterizationToolName;
-  ICaloClusterization* m_clusterizationTool;
+  Gaudi::Property<std::string> m_clusterizationToolName {this, "CaloClusterizationTool", "CaloClusterizationTool"};
+  Gaudi::Property<std::string> m_dataProviderToolName   {this, "CaloDataProviderTool"  , "CaloDataProvider"};
 
-  std::string          m_dataProviderToolName;
-  ICaloDataProvider*   m_dataProviderTool;
+  ICaloClusterization* m_clusterizationTool = nullptr;
+  ICaloDataProvider*   m_dataProviderTool = nullptr;
+  DeCalorimeter*       m_calo = nullptr;
 
-  DeCalorimeter*       m_calo;
   unsigned int         m_ecalCaloNum;
-  std::string          m_digitLocation;
-  std::string          m_clusterLocation;
-  unsigned int         m_neighbourLevel;
-  bool                 m_sort;
-  bool                 m_sortET;
-  bool                 m_decodeFullEcal;
-  bool                 m_clusOnTES;
+
+  Gaudi::Property<std::string>  m_digitLocation  {this, "CaloDigitLocation"  , LHCb::CaloDigitLocation::Hlt1Ecal};
+  Gaudi::Property<std::string>  m_clusterLocation{this, "CaloClusterLocation", LHCb::CaloClusterLocation::EcalHlt1};
+  
+  Gaudi::Property<unsigned int> m_neighbourLevel
+    {this, "NeighbourLevel", 2, "Level parameter for the CaloClusterizationTool, search clusters in (1+2*Level)x(1+2*Level) region around the seed cell"};
+
+  Gaudi::Property<bool> m_sort
+    {this, "Sort", false, "sort the clusters due to energy"};
+
+  Gaudi::Property<bool> m_sortET
+    {this, "SortET", false, "if Sort: sort the clusters due to transverse energy"};
+
+  Gaudi::Property<bool> m_decodeFullEcal
+    {this, "DecodeFullEcal", false, "false = decode only the Tell1s around the L0CaloCandidate cellID"};
+
+  Gaudi::Property<bool> m_clusOnTES
+    {this, "ClusterOnTES", false};
+
   mutable std::set<int>  m_decodedSources;
 };
 #endif // L0CALO2CALOTOOL_H

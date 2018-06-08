@@ -19,47 +19,38 @@
  */
 // ============================================================================
 // Declaration of the Tool Factory
-DECLARE_TOOL_FACTORY( CaloGetterTool )
+DECLARE_COMPONENT( CaloGetterTool )
 // ============================================================================
 // Standard constructor, initializes variables
 // ============================================================================
 CaloGetterTool::CaloGetterTool ( const std::string& type, const std::string& name,
                                  const IInterface* parent )
-: base_class ( type, name , parent ) ,m_detMask(0xF)
+: base_class ( type, name , parent )
 {
   declareInterface<ICaloGetterTool>(this);
-  declareProperty ( "GetDigits"        , m_digiUpd = true  ) ;
-  declareProperty ( "GetClusters"      , m_clusUpd = false ) ;
-  declareProperty ( "GetHypos"         , m_hypoUpd = false ) ;
-  //declareProperty ( "GetProviders"     , m_provUpd = false ) ;
-  declareProperty ( "DigitLocations"   , m_digiLoc ) ;
-  declareProperty ( "ClusterLocations" , m_clusLoc ) ;
-  declareProperty ( "HypoLocations"    , m_hypoLoc ) ;
-  declareProperty ( "DetectorMask"     , m_detMask=0xF);
-
 
   std::string flag = context();
   if( std::string::npos != name.find ("HLT") ||
       std::string::npos != name.find ("Hlt") )flag="Hlt";
 
   // digits
-  if((m_detMask&8)!=0)m_digiLoc.push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Hcal" , flag ) ) ;
-  if((m_detMask&4)!=0)m_digiLoc.push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Ecal" , flag ) ) ;
-  if((m_detMask&2)!=0)m_digiLoc.push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Prs"  , flag ) ) ;
-  if((m_detMask&1)!=0)m_digiLoc.push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Spd"  , flag ) ) ;
+  if((m_detMask&8)!=0)m_digiLoc.value().push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Hcal" , flag ) ) ;
+  if((m_detMask&4)!=0)m_digiLoc.value().push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Ecal" , flag ) ) ;
+  if((m_detMask&2)!=0)m_digiLoc.value().push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Prs"  , flag ) ) ;
+  if((m_detMask&1)!=0)m_digiLoc.value().push_back( LHCb::CaloAlgUtils::CaloDigitLocation( "Spd"  , flag ) ) ;
 
-  if((m_detMask&8)!=0)m_clusLoc.push_back( LHCb::CaloAlgUtils::CaloClusterLocation( "Hcal" , flag ) ) ;
-  if((m_detMask&4)!=0)m_clusLoc.push_back( LHCb::CaloAlgUtils::CaloClusterLocation( "Ecal" , flag ) ) ;
-  m_clusLoc.push_back( LHCb::CaloAlgUtils::CaloSplitClusterLocation( flag ) ) ;
+  if((m_detMask&8)!=0)m_clusLoc.value().push_back( LHCb::CaloAlgUtils::CaloClusterLocation( "Hcal" , flag ) ) ;
+  if((m_detMask&4)!=0)m_clusLoc.value().push_back( LHCb::CaloAlgUtils::CaloClusterLocation( "Ecal" , flag ) ) ;
+  m_clusLoc.value().push_back( LHCb::CaloAlgUtils::CaloSplitClusterLocation( flag ) ) ;
 
-  m_hypoLoc.push_back( LHCb::CaloAlgUtils::CaloHypoLocation("Photons"      , flag ) );
-  m_hypoLoc.push_back( LHCb::CaloAlgUtils::CaloHypoLocation("Electrons"    , flag ) );
-  m_hypoLoc.push_back( LHCb::CaloAlgUtils::CaloHypoLocation("SplitPhotons" , flag ) );
-  m_hypoLoc.push_back( LHCb::CaloAlgUtils::CaloHypoLocation("MergedPi0s"   , flag ) );
-
-  // ==========================================================================
+  m_hypoLoc.value().push_back( LHCb::CaloAlgUtils::CaloHypoLocation("Photons"      , flag ) );
+  m_hypoLoc.value().push_back( LHCb::CaloAlgUtils::CaloHypoLocation("Electrons"    , flag ) );
+  m_hypoLoc.value().push_back( LHCb::CaloAlgUtils::CaloHypoLocation("SplitPhotons" , flag ) );
+  m_hypoLoc.value().push_back( LHCb::CaloAlgUtils::CaloHypoLocation("MergedPi0s"   , flag ) );
 }
+
 // ============================================================================
+
 StatusCode CaloGetterTool::initialize()
 {
   StatusCode sc = base_class::initialize();
@@ -67,7 +58,7 @@ StatusCode CaloGetterTool::initialize()
 
   counterStat = tool<ICounterLevel>("CounterLevel");
 
-  if( m_detMask != 0xF) info() << "Incomplete calorimeter detector is requested - mask = " << m_detMask << endmsg;
+  if( m_detMask != 0xF) info() << "Incomplete calorimeter detector is requested - mask = " << m_detMask.value() << endmsg;
   //
   if((m_detMask&8)!=0)m_provider["Hcal"] = tool<ICaloDataProvider>( "CaloDataProvider" , "HcalDataProvider" );
   if((m_detMask&4)!=0)m_provider["Ecal"] = tool<ICaloDataProvider>( "CaloDataProvider" , "EcalDataProvider" );

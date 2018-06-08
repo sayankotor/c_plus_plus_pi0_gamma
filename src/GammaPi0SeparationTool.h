@@ -1,5 +1,5 @@
 #ifndef GAMMAPI0SEPARATIONTOOL_H
-#define GAMMAPI0SEPARATIONTOOL_H 
+#define GAMMAPI0SEPARATIONTOOL_H 1
 
 // Include files
 // from Gaudi
@@ -13,10 +13,6 @@
 #include "LHCbMath/Line.h"
 #include "LHCbMath/GeomFun.h"
 
-//using xgb in c++
-
-#include "XGBClassifierPhPi0.h"
-
 //using namespace LHCb;
 
 #include "TMV_MLP_inner.C"
@@ -24,28 +20,16 @@
 #include "TMV_MLP_outer.C"
 
 
-/** @class GammaPi0SeparationTool1 GammaPi0SeparationTool1.h
+/** @class GammaPi0SeparationTool GammaPi0SeparationTool.h
  *
  *
  *  @author Miriam Calvo Gomez
  *  @date   2010-03-29
  */
 
-struct functor_cell { 
-   bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
-    if ((int)cell_a.cellID().area() == (int)cell_b.cellID().area()) {
-      if ((int)cell_a.cellID().col() == (int)cell_b.cellID().col()) {
-        return (int)cell_a.cellID().row() < (int)cell_b.cellID().row();
-      }
-      return ((int)cell_a.cellID().col() < (int)cell_b.cellID().col());
-   }
-   return ((int)cell_a.cellID().area() < (int)cell_b.cellID().area());
- }
-};
-
 class GammaPi0SeparationTool : public extends<GaudiTool, IGammaPi0SeparationTool>{
 public:
-  functor_cell comparer;
+
   /// Standard constructor
   GammaPi0SeparationTool( const std::string& type,
                           const std::string& name,
@@ -65,8 +49,6 @@ public:
                     double& r2PS, double& asymPS, double& kappaPS, double& r2r4PS,
                     double& eSumPS, double& ePrs, double& eMaxPS, double& e2ndPS, double& ecornerPS,
                     int& multiPS, int& multiPS15, int& multiPS30, int& multiPS45) override;
-
-  bool GetRawEnergy(const LHCb::CaloHypo* hypo, std::vector<double>& rowEnergy);
 
   double inputData(std::string data) override { //@TODO: const-ify
     // try ecal data
@@ -90,26 +72,19 @@ public:
 
 private:
 
-  double m_minPt = 2000.;
+  Gaudi::Property<float> m_minPt {this, "MinPt", 2000.};
 
   std::unique_ptr<IClassifierReader> m_reader0;
   std::unique_ptr<IClassifierReader> m_reader1;
   std::unique_ptr<IClassifierReader> m_reader2;
 
-  std::unique_ptr<XGBClassifierPhPi0> m_xgb0;
-  std::unique_ptr<XGBClassifierPhPi0> m_xgb1;
-  std::unique_ptr<XGBClassifierPhPi0> m_xgb2;
-
   const DeCalorimeter* m_ecal = nullptr;
-  //const LHCb::CaloDigits* digits_full = nullptr;
 
   double photonDiscriminant(int area,
                             double r2, double r2r4, double asym,
                             double kappa, double Eseed, double E2,
                             double r2PS, double asymPS, double eMaxPS, double e2ndPS,
                             int multiPS, int multiPS15, int multiPS30, int multiPS45);
-
-  double XGBDiscriminant(int area, std::vector<double>& row_energies);
 
   std::map<std::string,double> m_data;
   std::map<std::string,double> m_prsdata;

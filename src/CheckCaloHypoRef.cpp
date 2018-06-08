@@ -13,7 +13,7 @@
 //-----------------------------------------------------------------------------
 
 // Declaration of the Algorithm Factory
-DECLARE_ALGORITHM_FACTORY( CheckCaloHypoRef )
+DECLARE_COMPONENT( CheckCaloHypoRef )
 
 
 //=============================================================================
@@ -24,10 +24,11 @@ CheckCaloHypoRef::CheckCaloHypoRef( const std::string& name,
 : GaudiAlgorithm ( name , pSvcLocator )
 {
   using namespace LHCb::CaloAlgUtils;
-  declareProperty( "CaloHypos", m_inputs = {
-        CaloHypoLocation("Photons"   , context()),
-        CaloHypoLocation("Electrons" , context()),
-        CaloHypoLocation("MergedPi0s", context()) } );
+  m_inputs.value() = {
+    CaloHypoLocation("Photons"   , context()),
+    CaloHypoLocation("Electrons" , context()),
+    CaloHypoLocation("MergedPi0s", context()) 
+  };
 }
 
 //=============================================================================

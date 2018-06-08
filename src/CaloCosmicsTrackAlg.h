@@ -17,20 +17,24 @@
 class CaloCosmicsTrackAlg : public GaudiTupleAlg {
 public: 
   /// Standard constructor
-  CaloCosmicsTrackAlg( const std::string& name, ISvcLocator* pSvcLocator );
-
+  using GaudiTupleAlg::GaudiTupleAlg;
 
   StatusCode initialize() override;    ///< Algorithm initialization
   StatusCode execute() override;    ///< Algorithm execution
 
 private:
-  ICaloCosmicsTrackTool* m_caloTrack;
+  ICaloCosmicsTrackTool* m_caloTrack = nullptr;
 
-  std::string m_trackToolType;
-  std::string m_forward;
-  std::string m_backward;
-  bool m_monitor;
+  Gaudi::Property<std::string> m_trackToolType 
+    {this, "TrackTool", "CaloCosmicsTrackTool"};
   
+  Gaudi::Property<std::string> m_forward 
+    {this, "ForwardTrackContainer", LHCb::TrackLocation::CaloCosmicsForward};
+
+  Gaudi::Property<std::string> m_backward 
+    {this, "BackwardTrackContainer", LHCb::TrackLocation::CaloCosmicsBackward};
+
+  Gaudi::Property<bool> m_monitor {this, "Monitor", false};
 
 };
 #endif // CALOCOSMICSTRACKALG_H

@@ -9,8 +9,12 @@
 #include <unordered_map>
 #include <iostream>
 #include <iomanip>
+#include <string>
+#include <cstdlib>
+
 // local
 #include "GammaPi0XGBoostTool.h"
+#include <fstream>
 
 using namespace LHCb;
 using namespace Gaudi::Units;
@@ -20,9 +24,37 @@ using namespace Gaudi::Units;
 // 2018-03-24 : author @sayankotor
 //-----------------------------------------------------------------------------
 
-
 //Declare nessesary help functionality
 namespace {
+
+const int CaloNCol[4] = {64, 32, 16, 16};
+const int CaloNRow[4] = {52, 20, 12, 12};
+const unsigned Granularity[3] = {1, 2, 3};
+
+size_t getClusterType (const CaloCellID& id) {
+  const unsigned ClusterSize = 5;
+  int type (id.area());
+  int xOffsetOut = std::min (int(id.col() - (32 - CaloNCol[type]*Granularity[type]/2)), // left edge
+                 int(31 + CaloNCol[type]*Granularity[type]/2 - id.col())); // right edge
+  int yOffsetOut = std::min (int(id.row() - (32 - CaloNRow[type]*Granularity[type]/2)),
+                 int(31 + CaloNRow[type]*Granularity[type]/2 - id.row()));
+  int innerWidth = CaloNCol[type+1] * (type != 2 ? Granularity[type] : 1); // process inner hole specially
+  int innerHeight = CaloNRow[type+1] * (type != 2 ? Granularity[type] : 1); // process inner hole specially
+
+  int xOffsetIn = std::min (int(id.col() - (31 - innerWidth/2)),
+                int(32 + innerWidth/2 - id.col()));
+  int yOffsetIn = std::min (int(id.row() - (31 - innerHeight/2)),
+                int(32 + innerHeight/2 - id.row()));
+  const int margin = (ClusterSize-1)/2;
+  bool outerBorder = xOffsetOut < margin || yOffsetOut < margin;
+  bool innerBorder = xOffsetIn > -margin && yOffsetIn > -margin;
+  if (innerBorder) return type+3;
+  else if (outerBorder) return type+6;
+  return type;
+}
+
+
+
 struct functor_cell { 
   bool operator()(LHCb::CaloDigit& cell_a, LHCb::CaloDigit& cell_b) {
     if ((int)cell_a.cellID().area() == (int)cell_b.cellID().area()) {
@@ -48,6 +80,68 @@ struct cellID_hash {
   }
 };
 
+struct calorimeter_geometry {
+  int row_size = 384;
+  int col_size = 384;
+  std::vector<int> cell_size = {6, 3, 2};
+  std::map<int,int> cell_area = {
+                { 6, 0 },
+                { 3, 1 },
+                { 2, 2 } };
+
+  std::vector<std::pair<double,double>> help = std::vector<std::pair<double,double>>(col_size, std::make_pair(0,36.0)); 
+  std::vector<std::vector<std::pair<double,double>> > c_geometry = std::vector<std::vector<std::pair<double,double>> > (row_size, help);
+  calorimeter_geometry(){
+    if (!this->init()){
+      std::cout<<"calorimeter_geometry init do not succes"<<std::endl;
+    }  
+  }
+
+  int get_R (int area, int r) {
+      if (area == 0){
+        return r/6;
+      }
+      else if (area == 1){
+        return r/3 - 32;
+      }
+      else if (area == 2){
+        return r/2 - 64;
+      }
+      return -10;
+  }
+
+  int get_r (int area, int R) {
+      if (area == 0){
+        return R*6;
+      }
+      else if (area == 1){
+        return (R + 32)*3;
+      }
+      else if (area == 2){
+        return (R + 64)*2;
+      }
+      return -10;
+  }
+
+private:
+  bool init() {
+    //define 1-area
+    for (int i = 96; i < 288; i++){
+      for (int j = 132; j< 252; j++){
+        c_geometry[i][j] = std::make_pair(1, 9.0);
+      }
+    }
+    //define 2-area
+    for (int i = 144; i < 240; i++){
+      for (int j = 156; j< 228; j++){
+        c_geometry[i][j] = std::make_pair(2, 4.0);
+      }
+    }
+    return true;
+  }
+
+};
+
 }
 
 // Declaration of the Tool Factory
@@ -56,7 +150,7 @@ DECLARE_TOOL_FACTORY( GammaPi0XGBoostTool )
 //=============================================================================
 // Standard constructor, initializes variables
 //=============================================================================
-calorimeter_geometry GammaPi0XGBoostTool::m_cgeom;
+static calorimeter_geometry m_cgeom;
 
 GammaPi0XGBoostTool::GammaPi0XGBoostTool( const std::string& type,
                                                 const std::string& name,
@@ -82,20 +176,19 @@ StatusCode GammaPi0XGBoostTool::initialize() {
   /// Retrieve geometry of detector
   m_ecal = getDetIfExists<DeCalorimeter>( DeCalorimeterLocation::Ecal );
 
-  if (!m_cgeom.init()){
-    std::cout<<"init do not succes"<<std::endl;
-    return 0;
-  }
+
+  const std::string paramEnv = "PARAMFILESROOT";   
+  std::string paramRoot = std::string(getenv(paramEnv.c_str()));    
   
-
-  // TMVA discriminant
-
-  m_xgb0 = std::make_unique<XGBClassifierPhPi0>("/afs/cern.ch/user/v/vchekali/public/DaVinci2/DaVinciDev/models/classes/0_simpl.model");
-  m_xgb1 = std::make_unique<XGBClassifierPhPi0>("/afs/cern.ch/user/v/vchekali/public/DaVinci2/DaVinciDev/models/classes/1_simpl.model");
-  m_xgb2 = std::make_unique<XGBClassifierPhPi0>("/afs/cern.ch/user/v/vchekali/public/DaVinci2/DaVinciDev/models/classes/2_simpl.model");
-  m_xgb0_b = std::make_unique<XGBClassifierPhPi0>("/afs/cern.ch/user/v/vchekali/public/DaVinci2/DaVinciDev/models/classes/0_bound.model");
-  m_xgb1_b = std::make_unique<XGBClassifierPhPi0>("/afs/cern.ch/user/v/vchekali/public/DaVinci2/DaVinciDev/models/classes/1_bound.model");
-  m_xgb2_b = std::make_unique<XGBClassifierPhPi0>("/afs/cern.ch/user/v/vchekali/public/DaVinci2/DaVinciDev/models/classes/2_bound.model");
+  m_xgb0 = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/0_simpl.model");
+  m_xgb1 = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/1_simpl.model");
+  m_xgb2 = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/2_simpl.model");
+  m_xgb03_b = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/bound03.model");
+  m_xgb06_b = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/bound06.model");
+  m_xgb14_b = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/bound14.model");
+  m_xgb17_b = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/bound17.model");
+  m_xgb25_b = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/bound25.model");
+  m_xgb28_b = std::make_unique<XGBClassifierPhPi0>(paramRoot + "/bound25.model");
 
   return StatusCode::SUCCESS;
 }
@@ -121,129 +214,84 @@ StatusCode GammaPi0XGBoostTool::finalize() {
 
 
 double GammaPi0XGBoostTool::isPhoton(const LHCb::CaloHypo* hypo){
-  // clear all data
-  m_data.clear();
-  m_prsdata.clear();
 
   if ( !m_ecal ) return m_def;
   if ( LHCb::CaloMomentum(hypo).pt() < m_minPt) return m_def;
-
-  double fr2 = 0;
-  double fasym = 0;
-  double fkappa = 0;
-  double fr2r4 = 0;
-  double Eseed = 0;
-  double E2 = 0;
-  double Ecl = 0;
-  int area =0;
+  const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );
+  if (!cluster) return m_def;
+  int area = cluster->seed().area();
 
   std::vector<double> rawEnergyVector(25, 0.0);
 
-  // evaluate the NN inputs
-  bool ecalV = ClusterVariables(hypo, fr2, fasym, fkappa, fr2r4, Ecl, Eseed, E2, area);
-  bool isBorder = false;
-  bool rawEnergy = GetRawEnergy(hypo, isBorder, rawEnergyVector);
+  int cluster_type = getClusterType(cluster->seed());
+  bool rawEnergy = GetRawEnergy(hypo, cluster_type, rawEnergyVector);
 
   if(!rawEnergy) return m_def;
-  // return NN output
-  std::cout<<"IS photon XGBoost new"<<std::endl;
-  if (rawEnergyVector.size() != 25)
-  {
-    std::cout<<"else: raw energy size: "<<rawEnergyVector.size()<<std::endl;
-  }
-  double prediction_xgb = XGBDiscriminant(area, isBorder, rawEnergyVector);
-  std::cout<<"border "<<isBorder<<" prediction_xgb: "<<prediction_xgb<<std::endl;
-  //return photonDiscriminant(area, fr2, fr2r4, fasym, fkappa, Eseed, E2,
-                            //r2PS, asymPS, eMaxPS, e2ndPS, multiPS, multiPS15, multiPS30, multiPS45);
+  
+  double prediction_xgb = XGBDiscriminant(cluster_type, rawEnergyVector);
   return prediction_xgb;
 }
 
-//bool recreate(std::vector<std::vector<<double>>& initial_vector, ){
 
-//}
-
-double GammaPi0XGBoostTool::XGBDiscriminant(int area, bool isBorder, std::vector<double>& row_energies)
+double GammaPi0XGBoostTool::XGBDiscriminant(int cluster_type, std::vector<double>& row_energies)
 {
 
-        double value = ( (area == 0 && isBorder == false) ? m_xgb0->getClassifierValues(row_energies)
-                       : (area == 1 && isBorder == false) ? m_xgb1->getClassifierValues(row_energies)
-                       : (area == 2 && isBorder == false) ? m_xgb2->getClassifierValues(row_energies)
-                       : (area == 0 && isBorder == true) ? m_xgb0_b->getClassifierValues(row_energies)
-                       : (area == 1 && isBorder == true) ? m_xgb1_b->getClassifierValues(row_energies)
-                       : (area == 2 && isBorder == true) ? m_xgb2_b->getClassifierValues(row_energies)
+        double value = ( (cluster_type == 0) ? m_xgb0->getClassifierValues(row_energies)
+                       : (cluster_type == 1) ? m_xgb1->getClassifierValues(row_energies)
+                       : (cluster_type == 2) ? m_xgb2->getClassifierValues(row_energies)
+                       : (cluster_type == 3) ? m_xgb03_b->getClassifierValues(row_energies)
+                       : (cluster_type == 4) ? m_xgb14_b->getClassifierValues(row_energies)
+                       : (cluster_type == 5) ? m_xgb25_b->getClassifierValues(row_energies)
+                       : (cluster_type == 6) ? m_xgb06_b->getClassifierValues(row_energies)
+                       : (cluster_type == 7) ? m_xgb17_b->getClassifierValues(row_energies)
+                       : (cluster_type == 8) ? m_xgb28_b->getClassifierValues(row_energies)
                        : -1e10 );
         //info() << " INPUT TO GAMMA/PI0 : NN[" << input << "]= " << value << " (area="<<area<<")"<< endmsg;
         return value;
 }
 
-bool GammaPi0XGBoostTool::ClusterVariables(const LHCb::CaloHypo* hypo,
-                                              double& fr2, double& fasym, double& fkappa, double& fr2r4, double& etot,
-double& Eseed, double& E2, int& area) {
-  return true;
-}
-
-bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, bool& isBorder, std::vector<double>& rowEnergy) const{
+bool GammaPi0XGBoostTool::GetRawEnergy(const LHCb::CaloHypo* hypo, int& cluster_type, std::vector<double>& rowEnergy) const{
   if( NULL == hypo)return false;
   LHCb::CaloDigits * digits_full = getIfExists<LHCb::CaloDigits>(LHCb::CaloDigitLocation::Ecal);
   const LHCb::CaloCluster* cluster = LHCb::CaloAlgUtils::ClusterFromHypo( hypo );   // OD 2014/05 - change to Split Or Main  cluster
   if( NULL == cluster)return false;
 
   LHCb::CaloCellID centerID = cluster->seed();
-  
-  CaloNeighbors n_vector = m_ecal->zsupNeighborCells(centerID);
-  LHCb::CaloCellID::Set n_set = LHCb::CaloCellID::Set(n_vector.begin(), n_vector.end());
-  for ( CaloNeighbors::const_iterator neighbor =  n_vector.begin(); n_vector.end() != neighbor ; ++neighbor ){
-      CaloNeighbors local_vector = m_ecal->zsupNeighborCells(*neighbor);
-      LHCb::CaloCellID::Set new_set = LHCb::CaloCellID::Set(local_vector.begin(), local_vector.end());
-      n_set.insert(new_set.begin(), new_set.end());
-  }
-
-  CaloNeighbors n_vector1 = m_ecal->neighborCells(centerID);
-  LHCb::CaloCellID::Set n_set1 = LHCb::CaloCellID::Set(n_vector1.begin(), n_vector1.end());
-  for ( CaloNeighbors::const_iterator neighbor =  n_vector1.begin(); n_vector1.end() != neighbor ; ++neighbor ){
-      CaloNeighbors local_vector1 = m_ecal->neighborCells(*neighbor);
-      LHCb::CaloCellID::Set new_set1 = LHCb::CaloCellID::Set(local_vector1.begin(), local_vector1.end());
-      n_set1.insert(new_set1.begin(), new_set1.end());
-  }
-
-  CaloNeighbors additional_neib;
-  additional_neib.reserve(n_set1.size() - n_set.size() + 1);
-  for (const auto & elem : n_set1){
-    if (n_set.find(elem) == n_set.end()){
-      additional_neib.push_back(elem);
-    }
-  }
-
-  std::cout<<n_set.size()<<std::endl;
-  std::cout<<std::endl;
 
   std::vector<std::vector<double>> vector_cells (5, std::vector<double>(5, 0.0));
   
   std::vector<int> col_numbers = {(int)centerID.col() - 2, (int)centerID.col() - 1, (int)centerID.col(), (int)centerID.col() + 1, (int)centerID.col() + 2};
   std::vector<int> row_numbers = {(int)centerID.row() - 2, (int)centerID.row() - 1, (int)centerID.row(), (int)centerID.row() + 1, (int)centerID.row() + 2};
 
-  if (n_set.size() < 25)
+  if (cluster_type > 2)
   {
-      isBorder = true;
-      vector_cells = GetCluster(centerID, digits_full);
+    for (auto& col_number: col_numbers){
+        for (auto& row_number: row_numbers){
+            const auto id_ = LHCb::CaloCellID(centerID.calo(), centerID.area(), row_number, col_number);
+            auto * test = digits_full->object(id_);
+            if (test) {
+                vector_cells[col_number - (int)centerID.col() + 2][row_number - (int)centerID.row() + 2] = test->e();
+            } else {
+                continue;
+            }
+        }
+    }
   }
 
   else 
-  {
-      for (auto& col_number: col_numbers){
-          for (auto& row_number: row_numbers){
-              const auto id_ = LHCb::CaloCellID(centerID.calo(), centerID.area(), row_number, col_number);
-              auto * test = digits_full->object(id_);
-              if (test) {
-                  vector_cells[col_number - (int)centerID.col() + 2][row_number - (int)centerID.row() + 2] = test->e();
-              } else {
-                  continue;
-              }
-          }
-      }
+  { 
+    for (auto& col_number: col_numbers){
+        for (auto& row_number: row_numbers){
+            const auto id_ = LHCb::CaloCellID(centerID.calo(), centerID.area(), row_number, col_number);
+            auto * test = digits_full->object(id_);
+            if (test) {
+                vector_cells[col_number - (int)centerID.col() + 2][row_number - (int)centerID.row() + 2] = test->e();
+            } else {
+                continue;
+            }
+        }
+    }
   }
-
-  
 
   for (int i = 0; i < 5; i++){
       for (int j = 0; j < 5; j++){
@@ -288,5 +336,4 @@ std::vector<std::vector<double>> GammaPi0XGBoostTool::GetCluster(const LHCb::Cal
         }
       }
       return vector_cells;
-  }
-
+}

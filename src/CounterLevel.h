@@ -27,7 +27,7 @@ public:
     
 private:
 
-  int m_clevel = 1; // quiet mode is the default
+  Gaudi::Property<int> m_clevel {this, "SetLevel", 1, "quiet mode is the default"};
   bool m_isQuiet = true;
   bool m_isVerbose = false;
 };

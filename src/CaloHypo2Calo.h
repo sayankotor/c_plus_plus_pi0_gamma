@@ -56,13 +56,13 @@ public:
 protected:
 
 private:
-  bool m_seed;
-  bool m_neighb;
-  bool m_line;
-  bool m_whole;
-  int m_status;
-  double m_x;
-  double m_y;
+  Gaudi::Property<bool> m_seed {this, "Seed", true};
+  Gaudi::Property<bool> m_neighb {this, "AddNeighbors", true};
+  Gaudi::Property<bool> m_line {this, "PhotonLine", true};
+  Gaudi::Property<bool> m_whole {this, "WholeCluster", false};
+  Gaudi::Property<int> m_status {this, "StatusMask", 0x0};
+  Gaudi::Property<float> m_x {this, "xTolerance", 5.*Gaudi::Units::mm};
+  Gaudi::Property<float> m_y {this, "yTolerance", 5.*Gaudi::Units::mm};
   CellNeighbour m_neighbour;
   LHCb::CaloCellID m_lineID ;
   Gaudi::XYZPoint  m_point;

@@ -1,6 +1,6 @@
 // $Id: Part2Calo.h,v 1.2 2010-06-10 12:46:38 cattanem Exp $
 #ifndef PART2CALO_H
-#define PART2CALO_H 1
+#define PART2CALO_H
 
 // Include files
 #include "Track2Calo.h"

@@ -23,7 +23,12 @@ XGBClassifierPhPi0::XGBClassifierPhPi0(const std::string& path)
       0.5,
       &m_cache_matrix);
   XGBoosterCreate(&m_cache_matrix, 1, &m_booster);
-  XGBoosterLoadModel(m_booster, xgb_path.c_str());
+  int err_code = XGBoosterLoadModel(m_booster, xgb_path.c_str());
+  if (err_code == -1){
+    std::cout<<"Do not load XGBModel "<<xgb_path.c_str()<<" "<<err_code<<std::endl;
+  } else {
+    std::cout<<"load XGBModel "<<xgb_path.c_str()<<" "<<err_code<<std::endl;
+  }
 }
 
 void XGBClassifierPhPi0::setPath(const std::string& path)
